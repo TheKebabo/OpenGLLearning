@@ -106,26 +106,25 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
     
-    // INIT VERTEX & INDEX DATA
+    // INIT VERTEX DATA
     // ----------------
     float vertices[] = {
-        0.5f,  0.5f, 0.0f,  // Top right
-        0.5f, -0.5f, 0.0f,  // Bottom right
-        -0.5f, -0.5f, 0.0f,  // Bottom left
-        -0.5f,  0.5f, 0.0f   // Top left 
-    };
-    unsigned int indices[] = {
-        0, 1, 3,   // First triangle
-        1, 2, 3    // Second triangle
+        // triangle 1
+        0.5f,  0.5f, 0.0f,
+        0.5f, -0.5f, 0.0f,
+        0.0f, -0.5f, 0.0f,
+        // triangle 2
+        -0.5f,  0.5f, 0.0f,
+        -0.5f,  -0.5f, 0.0f,
+        0.0f,  0.5f, 0.0f,
     };
 
-    // INIT VERTEX BUFFER (VBO), INIT INDEX DRAWING BUFFER (EBO), AND CONFIG VERTEX ATTRIBUTES (VAO)
-    // ---------------------------------------------------------------------------------------------
+    // INIT VERTEX BUFFER (VBO) AND CONFIG VERTEX ATTRIBUTES (VAO)
+    // -----------------------------------------------------------
     // INIT & BIND VAO THAT STORES STATE CONFIGS FOR SUPPLYING INTERPRETABLE VERTEX DATA TO OPENGL
     unsigned int VAO;   // ID of the object
     glGenVertexArrays(1, &VAO); // // Generates the object and stores the resulting id in passed in integer
     glBindVertexArray(VAO); // Binds 'VAO' as current active vertex array object
-
 
     // INIT, BIND & SET VBO THAT STORES MANY VERTICES IN GPU MEM FOR SPEEDY GPU ACCESS
     unsigned int VBO;   
@@ -133,13 +132,6 @@ int main()
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);  // Binds newly created object to the correct buffer type, which when updated/configured will update 'VBO' (as seen below)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);  // Copies vertex data into the buffer
-
-    // INIT, BIND & SET EBO THAT STORES INDEX DATA
-    unsigned int EBO;
-    glGenBuffers(1, &EBO);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // CONFIG VAO
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);   // Describes to OpenGL how to interpet vertex data
@@ -167,7 +159,7 @@ int main()
 
         glUseProgram(shaderProgram);    // Sets current active shader program to the one defined
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);    // Draws index data in EBO, using VAO configs, as a two traingle primitives
+        glDrawArrays(GL_TRIANGLES, 0, 6);    // Draws vertex data in VBO, using VAO configs, as two seperate triangle primitives
         glBindVertexArray(0); // UNBINDS VAO
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
