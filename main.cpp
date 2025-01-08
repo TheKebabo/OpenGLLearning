@@ -1,6 +1,7 @@
 #include <iostream>
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
+#include <vector>
 
 // SHADERS
 // -------
@@ -108,37 +109,39 @@ int main()
     
     // INIT VERTEX DATA
     // ----------------
-    float vertices[] = {
-        // triangle 1
+    float triangles[2][9] = {
+    {
         0.5f,  0.5f, 0.0f,
         0.5f, -0.5f, 0.0f,
-        0.0f, -0.5f, 0.0f,
-        // triangle 2
+        0.0f, -0.5f, 0.0f },
+    {
         -0.5f,  0.5f, 0.0f,
-        -0.5f,  -0.5f, 0.0f,
-        0.0f,  0.5f, 0.0f,
+        -0.5f, -0.5f, 0.0f,
+         0.0f,  0.5f, 0.0f }
     };
 
-    // INIT VERTEX BUFFER (VBO) AND CONFIG VERTEX ATTRIBUTES (VAO)
+    // INIT VERTEX BUFFERS (VBO) AND CONFIG VERTEX ATTRIBUTES FOR EACH VBO (VAO)
     // -----------------------------------------------------------
-    // INIT & BIND VAO THAT STORES STATE CONFIGS FOR SUPPLYING INTERPRETABLE VERTEX DATA TO OPENGL
-    unsigned int VAO;   // ID of the object
-    glGenVertexArrays(1, &VAO); // // Generates the object and stores the resulting id in passed in integer
-    glBindVertexArray(VAO); // Binds 'VAO' as current active vertex array object
+    // INIT VAOs THAT STORES STATE CONFIGS FOR SUPPLYING INTERPRETABLE VERTEX DATA TO OPENGL
+    unsigned VAOs[2];   // ID of the objects
+    glGenVertexArrays(2, VAOs); // // Generates the object and stores the resulting id in passed in integer
+    // INIT VBOs THAT STORES MANY VERTICES IN GPU MEM FOR SPEEDY GPU ACCESS
+    unsigned VBOs[2];   
+    glGenBuffers(2, VBOs);  
 
-    // INIT, BIND & SET VBO THAT STORES MANY VERTICES IN GPU MEM FOR SPEEDY GPU ACCESS
-    unsigned int VBO;   
-    glGenBuffers(1, &VBO);  
+    for (unsigned i = 0; i < 2; ++i) {
+        glBindVertexArray(VAOs[i]); // Binds the VAO as current active vertex array object
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);  // Binds newly created object to the correct buffer type, which when updated/configured will update 'VBO' (as seen below)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);  // Copies vertex data into the buffer
+        glBindBuffer(GL_ARRAY_BUFFER, VBOs[i]);  // Binds newly created object to the correct buffer type, which when updated/configured will update 'VBO' (as seen below)
+        glBufferData(GL_ARRAY_BUFFER, sizeof(triangles[i]), triangles[i], GL_STATIC_DRAW);  // Copies vertex data into the buffer
 
-    // CONFIG VAO
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);   // Describes to OpenGL how to interpet vertex data
-    glEnableVertexAttribArray(0);   /// Enables vertex attribute, since they are disabled by default
+        // CONFIG VAO
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);   // Describes to OpenGL how to interpet vertex data
+        glEnableVertexAttribArray(0);   /// Enables vertex attribute, since they are disabled by default
 
-    // UNBIND VBO FROM CURRENT ACTIVE BUFFER
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
+        // UNBIND VBO FROM CURRENT ACTIVE BUFFER
+        // glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
+    }
 
     // DRAW IN WIREFRAME
     // -----------------
@@ -158,9 +161,11 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shaderProgram);    // Sets current active shader program to the one defined
-        glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
-        glDrawArrays(GL_TRIANGLES, 0, 6);    // Draws vertex data in VBO, using VAO configs, as two seperate triangle primitives
-        glBindVertexArray(0); // UNBINDS VAO
+        for (unsigned i = 0; i < 2; ++i) {
+            glBindVertexArray(VAOs[i]); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
+            glDrawArrays(GL_TRIANGLES, 0, 6);    // Draws vertex data in VBO, using VAO configs, as two seperate triangle primitives
+            // glBindVertexArray(0); // UNBINDS VAO (not needed as next VAO is binded anyway)
+        }
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
         glfwSwapBuffers(window);    // For reader - search 'double buffer'
@@ -169,8 +174,8 @@ int main()
 
     // OPTIONAL: DE-ALLOC ALL RESOURCES ONCE PURPOSES ARE OUTLIVED
     // -----------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, VAOs);
+    glDeleteBuffers(1, VBOs);
     glDeleteProgram(shaderProgram);
 
     // GLFW: TERMINATE GLFW, CLEARING ALL PREVIOUSLY ALLOCATED GLFW RESOURCES
