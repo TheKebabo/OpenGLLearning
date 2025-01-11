@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 
@@ -6,16 +7,20 @@
 // -------
 const char *vertexShaderSource = "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
+    "layout (location = 1) in vec3 aColor;\n"
+    "out vec3 ourColor;\n"
     "void main()\n"
     "{\n"
     "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+    "   ourColor = aColor;\n"
     "}\0";
 const char *fragmentShaderSource = "#version 330 core\n"
+    "in vec3 ourColor;\n"
     "out vec4 FragColor;\n"
     "void main()\n"
     "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-    "}\n";
+    "   FragColor = vec4(ourColor, 1.0f);\n"
+    "}\0";
 
 
 // SETTINGS
@@ -109,10 +114,11 @@ int main()
     // INIT VERTEX & INDEX DATA
     // ----------------
     float vertices[] = {
-        0.5f,  0.5f, 0.0f,  // Top right
-        0.5f, -0.5f, 0.0f,  // Bottom right
-        -0.5f, -0.5f, 0.0f,  // Bottom left
-        -0.5f,  0.5f, 0.0f   // Top left 
+         // positions           // colors
+         0.5f,  0.5f, 0.0f,     1.0f, 0.0f, 0.0f,   // Top right
+         0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,   // Bottom right
+        -0.5f, -0.5f, 0.0f,     0.0f, 0.0f, 1.0f,   // Bottom left
+        -0.5f,  0.5f, 0.0f,     0.7f, 0.4f, 0.7f,   // Top left 
     };
     unsigned int indices[] = {
         0, 1, 3,   // First triangle
@@ -142,15 +148,17 @@ int main()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // CONFIG VAO
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);   // Describes to OpenGL how to interpet vertex data
-    glEnableVertexAttribArray(0);   /// Enables vertex attribute, since they are disabled by default
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);   // Describes to OpenGL how to interpet vertex POSITION data
+    glEnableVertexAttribArray(0);   /// Enables vertex attribute at location = 0, since they are disabled by default
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));   // Describes to OpenGL how to interpet vertex COLOUR data
+    glEnableVertexAttribArray(1);   /// Enables vertex attribute at location = 1, since they are disabled by default
 
     // UNBIND VBO FROM CURRENT ACTIVE BUFFER
     glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
 
     // DRAW IN WIREFRAME
     // -----------------
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);  // The fronts and backs of polygons will be rasterised as lines
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);  // The fronts and backs of polygons will be rasterised as lines
 
     // RENDER LOOP
     // -----------
@@ -162,15 +170,20 @@ int main()
 
         // RENDER
         // ------
+        // Clear colour buffer
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);    // Sets current active shader program to the one defined
+        // Activate the shader program
+        glUseProgram(shaderProgram);
+
+        // Render triangle
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);    // Draws index data in EBO, using VAO configs, as a two traingle primitives
-        glBindVertexArray(0); // UNBINDS VAO
+        glBindVertexArray(0); // Unbinds VAO
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
+        // -----------------------------------------
         glfwSwapBuffers(window);    // For reader - search 'double buffer'
         glfwPollEvents();
     }
