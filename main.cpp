@@ -46,7 +46,7 @@ int main()
 
     // BUILD & COMPILE SHADER PROGRAM
     // ------------------------------
-    Shader* ourShader = new Shader("vertexShader.vs", "fragmentShader.fs");
+    Shader* mainShader = new Shader("vertexShader.vs", "fragmentShader.fs");
     
     // INIT VERTEX & INDEX DATA
     // ----------------
@@ -59,7 +59,7 @@ int main()
     };
     unsigned int indices[] = {
         0, 1, 3,   // First triangle
-        // 1, 2, 3    // Second triangle
+        1, 2, 3    // Second triangle
     };
 
     // INIT VERTEX BUFFER (VBO), INIT INDEX DRAWING BUFFER (EBO), AND CONFIG VERTEX ATTRIBUTES (VAO)
@@ -112,7 +112,10 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Activate the shader program
-        ourShader->use();
+        mainShader->use();
+
+        float time = glfwGetTime();
+        mainShader->setFloat("redVal", sin(7*time + 1) / 2.0f);
 
         // Render triangle
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
@@ -129,7 +132,7 @@ int main()
     // -----------------------------------------------------------
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    delete ourShader;
+    delete mainShader;
 
     // GLFW: TERMINATE GLFW, CLEARING ALL PREVIOUSLY ALLOCATED GLFW RESOURCES
     glfwTerminate();
