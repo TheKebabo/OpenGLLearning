@@ -156,13 +156,13 @@ void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
     glGenBuffers(1, &VBO);
     
     glBindBuffer(GL_ARRAY_BUFFER, VBO);  // Binds newly created object to the correct buffer type, which when updated/configured will update 'VBO' (as seen below)
-    glBufferData(GL_ARRAY_BUFFER, size(vertices), &vertices, GL_STATIC_DRAW);  // Copies vertex data into the buffer
+    glBufferData(GL_ARRAY_BUFFER, size(vertices) * sizeof(float), vertices.data(), GL_STATIC_DRAW);  // Copies vertex data into the buffer
 
     // INIT, BIND & SET EBO THAT STORES INDEX DATA
     glGenBuffers(1, &EBO);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size(indices), &indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size(indices) * sizeof(float), indices.data(), GL_STATIC_DRAW);
 
     // CONFIG VAO
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);   // Describes to OpenGL how to interpet vertex POSITION data
