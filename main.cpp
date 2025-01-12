@@ -97,6 +97,7 @@ int main()
     // -----------------
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);  // The fronts and backs of polygons will be rasterised as lines
 
+
     // RENDER LOOP
     // -----------
     while(!glfwWindowShouldClose(window))
@@ -114,8 +115,7 @@ int main()
         // Activate the shader program
         mainShader->use();
 
-        float time = glfwGetTime();
-        mainShader->setFloat("redVal", sin(7*time + 1) / 2.0f);
+        mainShader->setFloat("xOffset", 0.5f);
 
         // Render triangle
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
