@@ -46,7 +46,7 @@ int main()
 
     // BUILD & COMPILE SHADER PROGRAM
     // ------------------------------
-    Shader* ourShader = new Shader("vertexShader.txt", "fragmentShader.txt");
+    Shader* ourShader = new Shader("vertexShader.vs", "fragmentShader.fs");
     
     // INIT VERTEX & INDEX DATA
     // ----------------
@@ -59,7 +59,7 @@ int main()
     };
     unsigned int indices[] = {
         0, 1, 3,   // First triangle
-        1, 2, 3    // Second triangle
+        // 1, 2, 3    // Second triangle
     };
 
     // INIT VERTEX BUFFER (VBO), INIT INDEX DRAWING BUFFER (EBO), AND CONFIG VERTEX ATTRIBUTES (VAO)
