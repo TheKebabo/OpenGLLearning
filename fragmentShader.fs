@@ -1,8 +1,14 @@
 #version 330 core
 
+// From vertex shader
+in vec3 colToFrag;
+in vec2 texCoordToFrag;
+
 out vec4 FragColor;
+
+uniform sampler2D ourTexture;
 
 void main()
 {
-    FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    FragColor = texture(ourTexture, texCoordToFrag);
 }

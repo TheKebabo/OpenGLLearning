@@ -18,6 +18,7 @@ int SCR_WIDTH = 800, SCR_HEIGHT = 600;
 // Utilities
 GLFWwindow* ConfigGLFW();
 void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vector<float>& vertices, const std::vector<unsigned>& indices);
+void LoadTexture(unsigned& texture);
 
 // CALLBACKS
 void Framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -46,37 +47,27 @@ int main()
     // INIT VERTEX & INDEX DATA
     // ------------------------
     std::vector<float> vertices = {
-         0.5f,  0.5f, 0.0f,   // Top right
-         0.5f, -0.5f, 0.0f,   // Bottom right
-        -0.5f, -0.5f, 0.0f,   // Bottom left
+        // positions          // colors           // texture coords
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,       // Top right
+         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,       // Bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,       // Bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f        // Top left 
     };
 
     std::vector<unsigned> indices = {
-        0, 1, 2,   // First triangle
+        0, 1, 3,   // First triangle
+        1, 2, 3,   // Second triangle
     };
 
-    // INIT TEXTURE DATA
-    // -----------------
-    float texCoords[] = {
-        vertices[0] + 0.5f, vertices[1] + 0.5f,
-        vertices[3] + 0.5f, vertices[4] + 0.5f,
-        vertices[6] + 0.5f, vertices[7] + 0.5f
-    };
+    // LOAD TEXTURE
+    // ------------
+    unsigned texture;
+    LoadTexture(texture);
 
-    // Config texture wrapping for s & t axes (x & y)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
-
-    // Config upscaling and downscaling texture filtering methods
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);  // Downscaling - nearest neighbour
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // Upscaling - bilinear filtering
-
+    // CONFIG VBO, EBO, VAO
+    // --------------------
     unsigned VBO, EBO, VAO;
     ConfigBuffers(VBO, EBO, VAO, vertices, indices);
-
-    // DRAW IN WIREFRAME
-    // -----------------
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);  // The fronts and backs of polygons will be rasterised as lines
 
     // RENDER LOOP
     // -----------
@@ -95,10 +86,10 @@ int main()
         // Activate the shader program
         mainShader->use();
 
-        // Render triangle
+        // Render triangle(s)
+        glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);    // Draws index data in EBO, using VAO configs, as a triangle primitive
-        glBindVertexArray(0); // Unbinds VAO
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);    // Draws index data in EBO, using VAO configs, as a triangle primitive(s)
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
         // -----------------------------------------
@@ -116,9 +107,6 @@ int main()
     glfwTerminate();
     return 0;
 }
-
-
-
 
 
 // GLFW: INIT & SETUP WINDOW OBJECT
@@ -165,11 +153,50 @@ void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, size(indices) * sizeof(float), indices.data(), GL_STATIC_DRAW);
 
     // CONFIG VAO
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);   // Describes to OpenGL how to interpet vertex POSITION data
-    glEnableVertexAttribArray(0);   /// Enables vertex attribute at location = 0, since they are disabled by default
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);                     // Describes to OpenGL how to interpet vertex POSITION data
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));   // Describes to OpenGL how to interpet vertex COLOUR data
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));   // Describes to OpenGL how to interpet vertex TEXTURE data
+    // Enable vertex attributes at location = n, since they are disabled by default
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
 
     // UNBIND VBO FROM CURRENT ACTIVE BUFFER
     glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
+}
+
+// CONFIG + LOAD TEXTURE
+// ---------------------
+void LoadTexture(unsigned& texture)
+{
+    // GEN TEXTURE GLOBJECT
+    // --------------------
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    // CONFIG WRAPPING & FILTERING
+    // ---------------------------
+    // Config texture wrapping for s & t axes (x & y)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // Config upscaling and downscaling texture filtering methods
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);  // Downscaling - nearest neighbour
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // Upscaling - bilinear filtering
+
+    // LOAD TEXTURE FROM IMAGE
+    // -----------------------
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("wall.jpg", &width, &height, &nrChannels, 0); 
+    if (data)   // Use previous image data to load texture
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);    // For reader, search 'OpenGL mipmaps'
+    }
+    else
+        std::cout << "Failed to load texture" << std::endl;  
+
+    stbi_image_free(data);  // Free image from memory
 }
 
 
