@@ -51,11 +51,11 @@ int main()
     // INIT VERTEX & INDEX DATA
     // ----------------
     float vertices[] = {
-         // positions           // colors
-         0.5f,  0.5f, 0.0f,     1.0f, 0.0f, 0.0f,   // Top right
-         0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,   // Bottom right
-        -0.5f, -0.5f, 0.0f,     0.0f, 0.0f, 1.0f,   // Bottom left
-        -0.5f,  0.5f, 0.0f,     0.7f, 0.4f, 0.7f,   // Top left 
+         // positions
+         0.5f,  0.5f, 0.0f,   // Top right
+         0.5f, -0.5f, 0.0f,   // Bottom right
+        -0.5f, -0.5f, 0.0f,   // Bottom left
+        -0.5f,  0.5f, 0.0f,   // Top left 
     };
     unsigned int indices[] = {
         0, 1, 3,   // First triangle
@@ -85,10 +85,8 @@ int main()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // CONFIG VAO
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);   // Describes to OpenGL how to interpet vertex POSITION data
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);   // Describes to OpenGL how to interpet vertex POSITION data
     glEnableVertexAttribArray(0);   /// Enables vertex attribute at location = 0, since they are disabled by default
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));   // Describes to OpenGL how to interpet vertex COLOUR data
-    glEnableVertexAttribArray(1);   /// Enables vertex attribute at location = 1, since they are disabled by default
 
     // UNBIND VBO FROM CURRENT ACTIVE BUFFER
     glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
@@ -113,9 +111,6 @@ int main()
 
         // Activate the shader program
         mainShader->use();
-
-        float time = glfwGetTime();
-        mainShader->setFloat("redVal", sin(7*time + 1) / 2.0f);
 
         // Render triangle
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
