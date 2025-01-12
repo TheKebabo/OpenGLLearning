@@ -2,25 +2,7 @@
 #include <cmath>
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
-
-// SHADERS
-// -------
-const char *vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "layout (location = 1) in vec3 aColor;\n"
-    "out vec3 ourColor;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "   ourColor = aColor;\n"
-    "}\0";
-const char *fragmentShaderSource = "#version 330 core\n"
-    "in vec3 ourColor;\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(ourColor, 1.0f);\n"
-    "}\0";
+#include "shader.h"
 
 
 // SETTINGS
@@ -64,52 +46,7 @@ int main()
 
     // BUILD & COMPILE SHADER PROGRAM
     // ------------------------------
-    // 1. GEN & COMPILE VERTEX SHADER
-    unsigned int vertexShader;  // ID of the vertex shader object that OpenGL dynamically compiles
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL); // Attach source code
-    glCompileShader(vertexShader);  // Compile source code
-    // Check for succesful compilation of this shader
-    int  success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);   // Queries shader for some target info, in this case if it was successful
-    if(!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);   // Retrieves compilation error message
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-    // 2. GEN & COMPILE FRAGMENT SHADER
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    // Check for succesful compilation of this shader
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);   // Queries shader for some target info, in this case if it was successful
-    if(!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);   // Retrieves compilation error message
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-
-    // 3. CREATE SHADER PROGRAM, LINKING PREVIOUSLY COMPILED SHADERS
-    unsigned int shaderProgram;
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    // Check for successful linking of shader program
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if(!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER_PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-
-    // 4. DELETE SHADERS FROM MEMORY (as not needed after shader progam object is created)
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    Shader* ourShader = new Shader("vertexShader.txt", "fragmentShader.txt");
     
     // INIT VERTEX & INDEX DATA
     // ----------------
@@ -175,11 +112,11 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Activate the shader program
-        glUseProgram(shaderProgram);
+        ourShader->use();
 
         // Render triangle
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);    // Draws index data in EBO, using VAO configs, as a two traingle primitives
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);    // Draws index data in EBO, using VAO configs, as a two triangle primitives
         glBindVertexArray(0); // Unbinds VAO
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
@@ -192,7 +129,7 @@ int main()
     // -----------------------------------------------------------
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
+    delete ourShader;
 
     // GLFW: TERMINATE GLFW, CLEARING ALL PREVIOUSLY ALLOCATED GLFW RESOURCES
     glfwTerminate();

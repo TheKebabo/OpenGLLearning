@@ -14,7 +14,8 @@
                 "-lglfw3",
                 "-lgdi32",
                 "C:\\msys64\\mingw64\\include\\GLAD\\glad.c",
-                "C:\\msys64\\mingw64\\include\\GLFW\\glfw3.h"
+                "C:\\msys64\\mingw64\\include\\GLFW\\glfw3.h",
+                "${workspaceFolder}\\shader.cpp"
             ],
             "options": {
                 "cwd": "${fileDirname}"
