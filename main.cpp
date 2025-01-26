@@ -59,15 +59,15 @@ int main()
         1, 2, 3,   // Second triangle
     };
 
-    // LOAD TEXTURE
-    // ------------
-    unsigned texture;
-    LoadTexture(texture);
-
     // CONFIG VBO, EBO, VAO
     // --------------------
     unsigned VBO, EBO, VAO;
     ConfigBuffers(VBO, EBO, VAO, vertices, indices);
+
+    // LOAD TEXTURE
+    // ------------
+    unsigned texture;
+    LoadTexture(texture);
 
     // RENDER LOOP
     // -----------
@@ -113,7 +113,11 @@ int main()
 // -------------------
 GLFWwindow* ConfigGLFW()
 {
-    glfwInit();
+    if (!glfwInit())
+    {
+        std::cout << "Failed to init GLFW" << std::endl;
+        return NULL;
+    }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -142,7 +146,7 @@ void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
 
     // INIT, BIND & SET VBO THAT STORES MANY VERTICES IN GPU MEM FOR SPEEDY GPU ACCESS
     glGenBuffers(1, &VBO);
-    
+
     glBindBuffer(GL_ARRAY_BUFFER, VBO);  // Binds newly created object to the correct buffer type, which when updated/configured will update 'VBO' (as seen below)
     glBufferData(GL_ARRAY_BUFFER, size(vertices) * sizeof(float), vertices.data(), GL_STATIC_DRAW);  // Copies vertex data into the buffer
 
@@ -155,11 +159,11 @@ void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
     // CONFIG VAO
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);                     // Describes to OpenGL how to interpet vertex POSITION data
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));   // Describes to OpenGL how to interpet vertex COLOUR data
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));   // Describes to OpenGL how to interpet vertex TEXTURE data
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));   // Describes to OpenGL how to interpet vertex TEXTURE data
     // Enable vertex attributes at location = n, since they are disabled by default
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
+    // glEnableVertexAttribArray(2);
 
     // UNBIND VBO FROM CURRENT ACTIVE BUFFER
     glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
@@ -187,7 +191,7 @@ void LoadTexture(unsigned& texture)
     // LOAD TEXTURE FROM IMAGE
     // -----------------------
     int width, height, nrChannels;
-    unsigned char *data = stbi_load("wall.jpg", &width, &height, &nrChannels, 0); 
+    unsigned char *data = stbi_load("face.jpg", &width, &height, &nrChannels, 0); 
     if (data)   // Use previous image data to load texture
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
