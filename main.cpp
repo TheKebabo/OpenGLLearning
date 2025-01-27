@@ -88,6 +88,7 @@ int main()
 
         // Render triangle(s)
         glBindTexture(GL_TEXTURE_2D, texture);
+        glEnable(GL_TEXTURE_2D);
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);    // Draws index data in EBO, using VAO configs, as a triangle primitive(s)
 
@@ -150,11 +151,13 @@ void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
     glBindBuffer(GL_ARRAY_BUFFER, VBO);  // Binds newly created object to the correct buffer type, which when updated/configured will update 'VBO' (as seen below)
     glBufferData(GL_ARRAY_BUFFER, size(vertices) * sizeof(float), vertices.data(), GL_STATIC_DRAW);  // Copies vertex data into the buffer
 
+    std::cout << vertices.data() << std::endl;
+
     // INIT, BIND & SET EBO THAT STORES INDEX DATA
     glGenBuffers(1, &EBO);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size(indices) * sizeof(float), indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size(indices) * sizeof(unsigned), indices.data(), GL_STATIC_DRAW);
 
     // CONFIG VAO
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);                     // Describes to OpenGL how to interpet vertex POSITION data
@@ -163,7 +166,7 @@ void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
     // Enable vertex attributes at location = n, since they are disabled by default
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
-    // glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(2);
 
     // UNBIND VBO FROM CURRENT ACTIVE BUFFER
     glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
@@ -191,7 +194,8 @@ void LoadTexture(unsigned& texture)
     // LOAD TEXTURE FROM IMAGE
     // -----------------------
     int width, height, nrChannels;
-    unsigned char *data = stbi_load("face.jpg", &width, &height, &nrChannels, 0); 
+    stbi_set_flip_vertically_on_load(true); /// Loads upside-down for some reason
+    unsigned char *data = stbi_load("wall.png", &width, &height, &nrChannels, 0); 
     if (data)   // Use previous image data to load texture
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
