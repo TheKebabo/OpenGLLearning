@@ -16,20 +16,20 @@ int SCR_WIDTH = 800, SCR_HEIGHT = 600;
 // FUNCTIONS
 // ---------
 // Utilities
-GLFWwindow* ConfigGLFW();
-void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vector<float>& vertices, const std::vector<unsigned>& indices);
-void LoadTexture(unsigned& texture);
+GLFWwindow* configGLFW();
+void configBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vector<float>& vertices, const std::vector<unsigned>& indices);
+void loadTexture(unsigned& texture);
 
 // CALLBACKS
-void Framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void ProcessInput(GLFWwindow* window);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void processInput(GLFWwindow* window);
 
 
 int main()
 {
     // GLFW: INIT & CONFIG
     // -------------------
-    GLFWwindow* window = ConfigGLFW();
+    GLFWwindow* window = configGLFW();
     if (window == NULL) return -1;
 
     // INIT GLAD, WHICH MANAGES FUNCTION POINTERS FOR OPENGL
@@ -62,12 +62,12 @@ int main()
     // CONFIG VBO, EBO, VAO
     // --------------------
     unsigned VBO, EBO, VAO;
-    ConfigBuffers(VBO, EBO, VAO, vertices, indices);
+    configBuffers(VBO, EBO, VAO, vertices, indices);
 
     // LOAD TEXTURE
     // ------------
     unsigned texture;
-    LoadTexture(texture);
+    loadTexture(texture);
 
     // RENDER LOOP
     // -----------
@@ -75,7 +75,7 @@ int main()
     {
         // INPUT
         // -----
-        ProcessInput(window);
+        processInput(window);
 
         // RENDER
         // ------
@@ -112,7 +112,7 @@ int main()
 
 // GLFW: INIT & SETUP WINDOW OBJECT
 // -------------------
-GLFWwindow* ConfigGLFW()
+GLFWwindow* configGLFW()
 {
     if (!glfwInit())
     {
@@ -133,13 +133,13 @@ GLFWwindow* ConfigGLFW()
         return NULL;
     }
     glfwMakeContextCurrent(window); // SETS CREATED WINDOW OBJ AS THE MAIN CONTEXT ON THE CURRENT THREAD
-    glfwSetFramebufferSizeCallback(window, Framebuffer_size_callback);  // FUNCTION IS CALLED ON WINDOW RESIZE
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);  // FUNCTION IS CALLED ON WINDOW RESIZE
     return window;
 }
 
 // INIT VERTEX BUFFER (VBO), INIT INDEX DRAWING BUFFER (EBO), AND CONFIG VERTEX ATTRIBUTES (VAO)
 // ---------------------------------------------------------------------------------------------
-void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vector<float>& vertices, const std::vector<unsigned>& indices)
+void configBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vector<float>& vertices, const std::vector<unsigned>& indices)
 {
     // INIT & BIND VAO THAT STORES STATE CONFIGS FOR SUPPLYING INTERPRETABLE VERTEX DATA TO OPENGL
     glGenVertexArrays(1, &VAO); // // Generates the object and stores the resulting id in passed in integer
@@ -150,8 +150,6 @@ void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);  // Binds newly created object to the correct buffer type, which when updated/configured will update 'VBO' (as seen below)
     glBufferData(GL_ARRAY_BUFFER, size(vertices) * sizeof(float), vertices.data(), GL_STATIC_DRAW);  // Copies vertex data into the buffer
-
-    std::cout << vertices.data() << std::endl;
 
     // INIT, BIND & SET EBO THAT STORES INDEX DATA
     glGenBuffers(1, &EBO);
@@ -174,7 +172,7 @@ void ConfigBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
 
 // CONFIG + LOAD TEXTURE
 // ---------------------
-void LoadTexture(unsigned& texture)
+void loadTexture(unsigned& texture)
 {
     // GEN TEXTURE GLOBJECT
     // --------------------
@@ -191,14 +189,21 @@ void LoadTexture(unsigned& texture)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);  // Downscaling - nearest neighbour
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // Upscaling - bilinear filtering
 
-    // LOAD TEXTURE FROM IMAGE
-    // -----------------------
+    // LOAD TEXTURE FROM IMAGE (HAS TO BE MORE > 24 BIT PER PIXEL)
+    // -----------------------------------------------------------
     int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true); /// Loads upside-down for some reason
-    unsigned char *data = stbi_load("wall.png", &width, &height, &nrChannels, 0); 
+    stbi_set_flip_vertically_on_load(true); // Loads upside-down for some reason
+    unsigned char *data = stbi_load("textures//face1.png", &width, &height, &nrChannels, 4);  // Set number of channels to 4 manually (don't know why)
+    nrChannels = 4; 
     if (data)   // Use previous image data to load texture
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        // Use stbi data to determine image format
+        GLenum internalFormat = nrChannels == 4 ? GL_RGBA8 :
+            nrChannels == 3 ? GL_RGB8 : 0;
+        GLenum dataFormat = nrChannels == 4 ? GL_RGBA :
+            nrChannels == 3 ? GL_RGB : 0;
+
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);    // For reader, search 'OpenGL mipmaps'
     }
     else
@@ -209,7 +214,7 @@ void LoadTexture(unsigned& texture)
 
 
 // PROCESSES INPUT BY QUERING GLFW ABOUT CURRENT FRAME
-void ProcessInput(GLFWwindow *window)
+void processInput(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)   // GLFW_RELEASE RETURNED FROM GetKey IF NOT PRESSED 
         glfwSetWindowShouldClose(window, true);
@@ -218,7 +223,7 @@ void ProcessInput(GLFWwindow *window)
 
 // CALLBACK FUNC THAT SETS SIZE OF RENDERING SPACE WITH RESPECT TO WINDOW OBJ
 // --------------------------------------------------------------------------
-void Framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);    
 }
