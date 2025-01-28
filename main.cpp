@@ -18,7 +18,7 @@ int SCR_WIDTH = 800, SCR_HEIGHT = 600;
 // Utilities
 GLFWwindow* configGLFW();
 void configBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vector<float>& vertices, const std::vector<unsigned>& indices);
-void loadTexture(unsigned& texture);
+void loadTexture(unsigned& texture, std::string imagePath);
 
 // CALLBACKS
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -64,10 +64,17 @@ int main()
     unsigned VBO, EBO, VAO;
     configBuffers(VBO, EBO, VAO, vertices, indices);
 
-    // LOAD TEXTURE
-    // ------------
-    unsigned texture;
-    loadTexture(texture);
+    // LOAD TEXTURES
+    // -------------
+    unsigned texture1, texture2;
+    loadTexture(texture1, "textures//wall.png");
+    loadTexture(texture2, "textures//face2.png");
+
+    // Activate the shader program
+    mainShader->use();
+    // Set each uniform sampler to the correct texture unit
+    mainShader->setInt("texture1", 0);
+    mainShader->setInt("texture2", 1);
 
     // RENDER LOOP
     // -----------
@@ -83,12 +90,13 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Activate the shader program
-        mainShader->use();
+        // Bind textures to corresponding texture units
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture2);
 
         // Render triangle(s)
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glEnable(GL_TEXTURE_2D);
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);    // Draws index data in EBO, using VAO configs, as a triangle primitive(s)
 
@@ -172,7 +180,7 @@ void configBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
 
 // CONFIG + LOAD TEXTURE
 // ---------------------
-void loadTexture(unsigned& texture)
+void loadTexture(unsigned& texture, std::string imagePath)
 {
     // GEN TEXTURE GLOBJECT
     // --------------------
@@ -193,7 +201,7 @@ void loadTexture(unsigned& texture)
     // -----------------------------------------------------------
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true); // Loads upside-down for some reason
-    unsigned char *data = stbi_load("textures//face1.png", &width, &height, &nrChannels, 4);  // Set number of channels to 4 manually (don't know why)
+    unsigned char *data = stbi_load(imagePath.c_str(), &width, &height, &nrChannels, 4);  // Set number of channels to 4 manually (don't know why)
     nrChannels = 4; 
     if (data)   // Use previous image data to load texture
     {
@@ -210,6 +218,7 @@ void loadTexture(unsigned& texture)
         std::cout << "Failed to load texture" << std::endl;  
 
     stbi_image_free(data);  // Free image from memory
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 
