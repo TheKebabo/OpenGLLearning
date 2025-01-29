@@ -48,10 +48,10 @@ int main()
     // ------------------------
     std::vector<float> vertices = {
         // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,       // Top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,       // Bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,       // Bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f        // Top left 
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   0.55f, 0.55f,       // Top right
+         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   0.55f, 0.45f,       // Bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.45f, 0.45f,       // Bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.45f, 0.55f        // Top left 
     };
 
     std::vector<unsigned> indices = {
@@ -67,8 +67,8 @@ int main()
     // LOAD TEXTURES
     // -------------
     unsigned texture1, texture2;
-    loadTexture(texture1, "textures//wall.png", GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
-    loadTexture(texture2, "textures//face2.png", GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    loadTexture(texture1, "textures//wall.png", GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST);
+    loadTexture(texture2, "textures//face2.png", GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST);
 
     // Activate the shader program
     mainShader->use();
