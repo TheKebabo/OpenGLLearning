@@ -18,7 +18,7 @@ int SCR_WIDTH = 800, SCR_HEIGHT = 600;
 // Utilities
 GLFWwindow* configGLFW();
 void configBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vector<float>& vertices, const std::vector<unsigned>& indices);
-void loadTexture(unsigned& texture, std::string imagePath);
+void loadTexture(unsigned& texture, std::string imagePath, GLenum sWrap, GLenum tWrap, GLenum minFilter, GLenum maxFilter);
 
 // CALLBACKS
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -67,8 +67,8 @@ int main()
     // LOAD TEXTURES
     // -------------
     unsigned texture1, texture2;
-    loadTexture(texture1, "textures//wall.png");
-    loadTexture(texture2, "textures//face2.png");
+    loadTexture(texture1, "textures//wall.png", GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    loadTexture(texture2, "textures//face2.png", GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 
     // Activate the shader program
     mainShader->use();
@@ -178,9 +178,9 @@ void configBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
     glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
 }
 
-// CONFIG + LOAD TEXTURE
-// ---------------------
-void loadTexture(unsigned& texture, std::string imagePath)
+// CONFIG + LOAD TEXTURE (IMAGE HAS TO BE MORE > 24 BIT PER PIXEL)
+// ---------------------------------------------------------------
+void loadTexture(unsigned& texture, std::string imagePath, GLenum sWrap, GLenum tWrap, GLenum minFilter, GLenum maxFilter)
 {
     // GEN TEXTURE GLOBJECT
     // --------------------
@@ -190,15 +190,15 @@ void loadTexture(unsigned& texture, std::string imagePath)
     // CONFIG WRAPPING & FILTERING
     // ---------------------------
     // Config texture wrapping for s & t axes (x & y)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sWrap);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tWrap);
 
     // Config upscaling and downscaling texture filtering methods
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);  // Downscaling - nearest neighbour
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // Upscaling - bilinear filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);   // Downscaling
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, maxFilter);   // Upscaling
 
-    // LOAD TEXTURE FROM IMAGE (HAS TO BE MORE > 24 BIT PER PIXEL)
-    // -----------------------------------------------------------
+    // LOAD TEXTURE FROM IMAGE (IMAGE HAS TO BE MORE > 24 BIT PER PIXEL)
+    // -----------------------------------------------------------------
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true); // Loads upside-down for some reason
     unsigned char *data = stbi_load(imagePath.c_str(), &width, &height, &nrChannels, 4);  // Set number of channels to 4 manually (don't know why)
