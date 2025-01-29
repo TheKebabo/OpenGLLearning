@@ -6,16 +6,16 @@
             "command": "C:\\msys64\\mingw64\\bin\\g++.exe",
             "args": [
                 "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe",
+                "-g", "${file}",
+                "-Wall",
+                "-I${workspaceFolder}\\include",
                 "-lopengl32",
                 "-lglfw3",
                 "-lgdi32",
+                "${workspaceFolder}\\src\\shader.cpp",
                 "C:\\msys64\\mingw64\\include\\GLAD\\glad.c",
                 "C:\\msys64\\mingw64\\include\\GLFW\\glfw3.h",
-                "${workspaceFolder}\\shader.cpp"
+                "-o", "${fileDirname}\\${fileBasenameNoExtension}.exe",
             ],
             "options": {
                 "cwd": "${fileDirname}"

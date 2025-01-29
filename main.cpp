@@ -42,7 +42,7 @@ int main()
 
     // BUILD & COMPILE SHADER PROGRAM
     // ------------------------------
-    Shader* mainShader = new Shader("vertexShader.vs", "fragmentShader.fs");
+    Shader* mainShader = new Shader("src//vertexShader.vs", "src//fragmentShader.fs");
     
     // INIT VERTEX & INDEX DATA
     // ------------------------
