@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <algorithm>
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 #include "shader.h"
@@ -23,6 +24,9 @@ void loadTexture(unsigned& texture, std::string imagePath, GLenum sWrap, GLenum 
 // CALLBACKS
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+
+// Controlled by up/down keys
+float mixParam = 0.0f;
 
 
 int main()
@@ -95,6 +99,9 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture1);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2);
+
+        // Set uniform "mixParam" to global mixParam
+        mainShader->setFloat("mixParam", mixParam);
 
         // Render triangle(s)
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
@@ -225,8 +232,13 @@ void loadTexture(unsigned& texture, std::string imagePath, GLenum sWrap, GLenum 
 // PROCESSES INPUT BY QUERING GLFW ABOUT CURRENT FRAME
 void processInput(GLFWwindow *window)
 {
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)   // GLFW_RELEASE RETURNED FROM GetKey IF NOT PRESSED 
+    // GLFW_PRESS return if key is pressed, GLFW_RELEASE returned if key is not pressed 
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    else if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        mixParam = std::clamp(mixParam + 0.005f, 0.0f, 1.0f);
+    else if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        mixParam = std::clamp(mixParam - 0.005f, 0.0f, 1.0f);
 }
 
 
