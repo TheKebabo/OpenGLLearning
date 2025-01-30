@@ -80,16 +80,6 @@ int main()
     mainShader->setInt("texture1", 0);
     mainShader->setInt("texture2", 1);
 
-    // OBJECT TRANSFORMATIONS
-    // ----------------------
-    glm::mat4 trans = glm::mat4(1.0f);
-    trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
-    trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));  
-
-    // Set uniform in shader program
-    unsigned transformLoc = glGetUniformLocation(mainShader->ID, "transform");
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
-
     // RENDER LOOP
     // -----------
     while(!glfwWindowShouldClose(window))
@@ -109,6 +99,16 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture1);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2);
+        
+        // OBJECT TRANSFORMATIONS
+        // ----------------------
+        glm::mat4 trans = glm::mat4(1.0f);
+        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+        trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+
+        // Set uniform in shader program
+        unsigned transformLoc = glGetUniformLocation(mainShader->ID, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
         // Render triangle(s)
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
