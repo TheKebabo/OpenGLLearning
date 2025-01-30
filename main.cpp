@@ -102,17 +102,26 @@ int main()
         
         // OBJECT TRANSFORMATIONS
         // ----------------------
-        glm::mat4 trans = glm::mat4(1.0f);
-        trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+        glm::mat4 transA = glm::mat4(1.0f);
+        transA = glm::translate(transA, glm::vec3(0.5f, -0.5f, 0.0f));
+        transA = glm::rotate(transA, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
 
-        // Set uniform in shader program
-        unsigned transformLoc = glGetUniformLocation(mainShader->ID, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+        glm::mat4 transB = glm::mat4(1.0f);
+        transB = glm::translate(transB, glm::vec3(-0.5f, 0.5f, 0.0f));
+        transB = glm::scale(transB, glm::vec3(abs(sin((float)glfwGetTime()))));
+
 
         // Render triangle(s)
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
+        
+        // Set uniform in shader program
+        unsigned transformLoc = glGetUniformLocation(mainShader->ID, "transform");
+
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transA));
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);    // Draws index data in EBO, using VAO configs, as a triangle primitive(s)
+
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transB));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
         // -----------------------------------------
