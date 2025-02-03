@@ -7,6 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "shader.h"
+#include "camera.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -35,23 +36,11 @@ void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 // GLOBALS
 // -------
-struct {
-    vec3 pos   = vec3(0.0f, 0.0f,  3.0f);
-    vec3 forward = vec3(0.0f, 0.0f, -1.0f);
-    vec3 up    = vec3(0.0f, 1.0f,  0.0f);
-    float speed = 2.75f;
-    vec2 yawPitch = vec2(-90.0f, 0.0f);
-    float fov = 45;
-} MainCam;
+Camera mainCam;
 struct {
     float deltaTime = 0.0f;	// Time between current frame and last frame
     float lastFrame = 0.0f; // Time of last frame
 } TimeStruct;
-struct {
-    vec2 prevPos = vec2(0);
-    float sensitivity = 0.05f;
-    bool first = true;  // Checks if mouse input has been recieved yet, or if it has only just entered the screen
-} Mouse;
 
 int main()
 {
@@ -158,6 +147,7 @@ int main()
     mat4 view = mat4(1.0f);       // (WORLD -> VIEW): specifies the position of the camera relative to world-space coordinates
     mat4 projection = mat4(1.0f); // (VIEW -> CLIP) - specifies how the 3D coordinates should be transformed to a 2D viewport
 
+    containerModel = translate(containerModel, vec3(0.0f, 0.0, -3.0f));
     floorModel = rotate(floorModel, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
     floorModel = translate(floorModel, vec3(0.0f, 0.0f, 3.0f));
     floorModel = scale(floorModel, vec3(10.0f, 10.0f, 10.0f));
@@ -176,10 +166,8 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        // Note: we translate the scene in the reverse direction of where we want to move the camera, and the camera faces along the -VE z dir
-        // i.e. if camera should move back by 3 units, so 3 units in the +ve z dir, we should translate by -3 units in the +ve z dir
-        view = lookAt(MainCam.pos, MainCam.pos + MainCam.forward, MainCam.up);
-        projection = perspective(radians(MainCam.fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        view = mainCam.GetViewMatrix();
+        projection = perspective(radians(mainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         shader->setMat4("view", GL_FALSE, value_ptr(view));
         shader->setMat4("projection", GL_FALSE, value_ptr(projection));
 
@@ -343,33 +331,18 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)   // GLFW_RELEASE RETURNED FROM GetKey IF NOT PRESSED 
         glfwSetWindowShouldClose(window, true);
-
-    // FORWARD
     else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    {
-        vec3 xzNormal = vec3(0.0f, 1.0f, 0.0f);
-        vec3 forwardProject = MainCam.forward - dot(MainCam.forward, xzNormal) * xzNormal; // Vector in same dir projected onto xz plane
-        MainCam.pos += MainCam.speed * TimeStruct.deltaTime * normalize(forwardProject);
-    }
-    // BACKWARD
+        mainCam.ProcessKeyboard(FORWARD, TimeStruct.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        vec3 xzNormal = vec3(0.0f, 1.0f, 0.0f);
-        vec3 forwardProject = MainCam.forward - dot(MainCam.forward, xzNormal) * xzNormal; // Vector in same dir projected onto xz plane
-        MainCam.pos -= MainCam.speed * TimeStruct.deltaTime * normalize(forwardProject);
-    }
-    // RIGHT
+        mainCam.ProcessKeyboard(BACKWARD, TimeStruct.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        MainCam.pos += MainCam.speed * TimeStruct.deltaTime * normalize(cross(MainCam.forward, MainCam.up));
-    // LEFT
+        mainCam.ProcessKeyboard(RIGHT, TimeStruct.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        MainCam.pos -= MainCam.speed * TimeStruct.deltaTime * normalize(cross(MainCam.forward, MainCam.up));
-    // UP
+        mainCam.ProcessKeyboard(LEFT, TimeStruct.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        MainCam.pos += MainCam.speed * TimeStruct.deltaTime * MainCam.up;
-    // DOWN
+        mainCam.ProcessKeyboard(UP, TimeStruct.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        MainCam.pos -= MainCam.speed * TimeStruct.deltaTime * MainCam.up;
+        mainCam.ProcessKeyboard(DOWN, TimeStruct.deltaTime);
 }
 
 
@@ -378,36 +351,15 @@ void processInput(GLFWwindow *window)
 void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
-    Mouse.prevPos = vec2(width / 2.0f, height / 2.0f);
+    mainCam.Mouse.PrevPos = vec2(width / 2.0f, height / 2.0f);
 }
 
 void mouseMoveCallback(GLFWwindow* window, double mouseX, double mouseY)
 {
-    vec2 curPos = vec2((float)mouseX, (float)mouseY);
-
-    if (Mouse.first) // Initially true
-    {
-        Mouse.prevPos = curPos;
-        Mouse.first = false;
-    }
-
-    vec2 deltaMouse = (curPos - Mouse.prevPos) * Mouse.sensitivity;
-    deltaMouse.y *= -1; // Reverse since y-coordinates range from bottom to top
-    Mouse.prevPos = curPos;
-
-    MainCam.yawPitch += deltaMouse;
-
-    MainCam.yawPitch.y = clamp(MainCam.yawPitch.y, -89.0f, 89.0f);  // Constrain pitch
-
-    // Calculate resulting direction
-    vec3 newforward;
-    newforward.x = cos(radians(MainCam.yawPitch.x)) * cos(radians(MainCam.yawPitch.y));
-    newforward.y = sin(radians(MainCam.yawPitch.y));
-    newforward.z = sin(radians(MainCam.yawPitch.x)) * cos(radians(MainCam.yawPitch.y));
-    MainCam.forward = normalize(newforward);
+    mainCam.ProcessMouseMovement(mouseX, mouseY, true);
 }
 
 void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    MainCam.fov = clamp(MainCam.fov - (float)yoffset, 1.0f, 45.0f);
+    mainCam.ProcessMouseScroll(yoffset);
 }
