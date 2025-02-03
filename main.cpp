@@ -11,6 +11,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+using namespace glm;
+
 
 // SETTINGS
 // --------
@@ -21,13 +23,35 @@ int SCR_WIDTH = 800, SCR_HEIGHT = 600;
 // ---------
 // Utilities
 GLFWwindow* configGLFW();
-void configBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vector<float>& vertices, const std::vector<unsigned>& indices);
+void configBuffers(unsigned& VBO, unsigned& VAO, const std::vector<float>& vertices);
 void loadTexture(unsigned& texture, std::string imagePath, GLenum sWrap, GLenum tWrap, GLenum minFilter, GLenum maxFilter);
 
-// CALLBACKS
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+// Callbacks
+void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+void mouseMoveCallback(GLFWwindow* window, double mouseX, double mouseY);
+void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+
+// GLOBALS
+// -------
+struct {
+    vec3 pos   = vec3(0.0f, 0.0f,  3.0f);
+    vec3 forward = vec3(0.0f, 0.0f, -1.0f);
+    vec3 up    = vec3(0.0f, 1.0f,  0.0f);
+    float speed = 2.75f;
+    vec2 yawPitch = vec2(-90.0f, 0.0f);
+    float fov = 45;
+} MainCam;
+struct {
+    float deltaTime = 0.0f;	// Time between current frame and last frame
+    float lastFrame = 0.0f; // Time of last frame
+} TimeStruct;
+struct {
+    vec2 prevPos = vec2(0);
+    float sensitivity = 0.05f;
+    bool first = true;  // Checks if mouse input has been recieved yet, or if it has only just entered the screen
+} Mouse;
 
 int main()
 {
@@ -44,13 +68,15 @@ int main()
         return -1;
     }
 
+    glEnable(GL_DEPTH_TEST);
+
     // BUILD & COMPILE SHADER PROGRAM
     // ------------------------------
-    Shader* mainShader = new Shader("src//vertexShader.vs", "src//fragmentShader.fs");
+    Shader* shader = new Shader("src//vertexShader.vs", "src//fragmentShader.fs");
     
     // INIT VERTEX & INDEX DATA
     // ------------------------
-    std::vector<float> vertices = {
+    std::vector<float> containerVertices = {
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -93,43 +119,48 @@ int main()
         -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
-
-    std::vector<unsigned> indices = {
-        0, 1, 3,   // First triangle
-        1, 2, 3,   // Second triangle
+    std::vector<float> floorVertices = {
+        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f,
+        0.5f, -0.5f, 0.0f,  1.0f, 0.0f,
+        0.5f,  0.5f, 0.0f,  1.0f, 1.0f,
+        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,
     };
 
-    // CONFIG VBO, EBO, VAO
-    // --------------------
-    unsigned VBO, EBO, VAO;
-    configBuffers(VBO, EBO, VAO, vertices, indices);
+    std::vector<unsigned> floorIndices = {
+        0, 1, 2,
+        2, 3, 0
+    };
+
+    // CONFIG VBOs, VAOs
+    // -----------------
+    unsigned VBO1, VAO1;
+    configBuffers(VBO1, VAO1, containerVertices);
+
+    unsigned VBO2, VAO2;
+    configBuffers(VBO2, VAO2, floorVertices);
 
     // LOAD TEXTURES
     // -------------
-    unsigned texture1, texture2;
-    loadTexture(texture1, "textures//wall.png", GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
-    loadTexture(texture2, "textures//face2.png", GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    unsigned wallTexture, floorTexture;
+    loadTexture(wallTexture, "textures//wall.png", GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    loadTexture(floorTexture, "textures//face1.png", GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 
     // Activate the shader program
-    mainShader->use();
-    // Set each uniform sampler to the correct texture unit
-    mainShader->setInt("texture1", 0);
-    mainShader->setInt("texture2", 1);
+    shader->use();
+    // Set each uniform sampler to the correct texture unit (only 1 atm)
+    shader->setInt("ourTexture", 0);
 
     // OBJECT TRANSFORMATIONS
     // ----------------------
-    glm::mat4 model = glm::mat4(1.0f);      // (LOCAL -> WORLD): specifies the local-space transformations of coordinates on an object
-    glm::mat4 view = glm::mat4(1.0f);       // (WORLD -> VIEW): specifies the position of the camera relative to world-space coordinates
-    glm::mat4 projection = glm::mat4(1.0f); // (VIEW -> CLIP) - specifies how the 3D coordinates should be transformed to a 2D viewport
-    
-    // Note: we translate the scene in the reverse direction of where we want to move the camera, and the camera faces along the -VE z dir
-    // i.e. if camera should move back by 3 units, so 3 units in the +ve z dir, we should translate by -3 units in the +ve z dir
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-    projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    mainShader->setMat4("projection", GL_FALSE, glm::value_ptr(projection));
+    mat4 containerModel = mat4(1.0f);      // (LOCAL -> WORLD): specifies the local-space transformations of coordinates on an object
+    mat4 floorModel = mat4(1.0f);
 
-    glEnable(GL_DEPTH_TEST);
+    mat4 view = mat4(1.0f);       // (WORLD -> VIEW): specifies the position of the camera relative to world-space coordinates
+    mat4 projection = mat4(1.0f); // (VIEW -> CLIP) - specifies how the 3D coordinates should be transformed to a 2D viewport
 
+    floorModel = rotate(floorModel, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
+    floorModel = translate(floorModel, vec3(0.0f, 0.0f, 3.0f));
+    floorModel = scale(floorModel, vec3(10.0f, 10.0f, 10.0f));
 
     // RENDER LOOP
     // -----------
@@ -144,34 +175,59 @@ int main()
         // Clear colour & depth buffers
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        // Note: we translate the scene in the reverse direction of where we want to move the camera, and the camera faces along the -VE z dir
+        // i.e. if camera should move back by 3 units, so 3 units in the +ve z dir, we should translate by -3 units in the +ve z dir
+        view = lookAt(MainCam.pos, MainCam.pos + MainCam.forward, MainCam.up);
+        projection = perspective(radians(MainCam.fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        shader->setMat4("view", GL_FALSE, value_ptr(view));
+        shader->setMat4("projection", GL_FALSE, value_ptr(projection));
 
-        // Bind textures to corresponding texture units
+        // RENDER CONTAINER
+        // ----------------
+        // Bind textures to corresponding texture units (only 1 atm)
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
+        glBindTexture(GL_TEXTURE_2D, wallTexture);
 
-        // Set matrix uniforms in shader program
-        std::cout << (GLfloat)glfwGetTime() * glm::radians(50.0f) << std::endl;
-        model = glm::rotate(model, glm::radians(0.5f), glm::vec3(0.5f, 1.0f, 0.0f));    // Rotate over time
-        mainShader->setMat4("model", GL_FALSE, glm::value_ptr(model));
-        mainShader->setMat4("view", GL_FALSE, glm::value_ptr(view));
+        // Update model matrix
+        containerModel = rotate(containerModel, radians(0.5f), vec3(0.5f, 1.0f, 0.0f));    // Rotate over time
+        shader->setMat4("model", GL_FALSE, value_ptr(containerModel));
 
         // Render triangle(s)
-        glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO) so OpenGL correctly uses vertex data
+        glBindVertexArray(VAO1); // Binds the defined VAO (and automatically the EBO if present) so OpenGL correctly uses vertex data
         glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // RENDER FLOOR
+        // ------------
+        // Bind textures to corresponding texture units (only 1 atm)
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, floorTexture);
+        
+        // Change to correct model matrix
+        shader->setMat4("model", GL_FALSE, value_ptr(floorModel));
+
+        // Render triangle(s)
+        glBindVertexArray(VAO2); // Binds the defined VAO (and automatically the EBO if present) so OpenGL correctly uses vertex data
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, floorIndices.data());
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
         // -----------------------------------------
         glfwSwapBuffers(window);    // For reader - search 'double buffer'
         glfwPollEvents();
+
+        // Calculate delta time
+        float currentFrame = glfwGetTime();
+        TimeStruct.deltaTime = currentFrame - TimeStruct.lastFrame;
+        TimeStruct.lastFrame = currentFrame; 
     }
 
     // OPTIONAL: DE-ALLOC ALL RESOURCES ONCE PURPOSES ARE OUTLIVED
     // -----------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    delete mainShader;
+    unsigned VAOs[2] = {VAO1, VAO2};
+    unsigned VBOs[2] = {VBO1, VBO2};
+    glDeleteVertexArrays(2, VAOs);
+    glDeleteBuffers(2, VBOs);
+    delete shader;
 
     // GLFW: TERMINATE GLFW, CLEARING ALL PREVIOUSLY ALLOCATED GLFW RESOURCES
     glfwTerminate();
@@ -180,7 +236,7 @@ int main()
 
 
 // GLFW: INIT & SETUP WINDOW OBJECT
-// -------------------
+// --------------------------------
 GLFWwindow* configGLFW()
 {
     if (!glfwInit())
@@ -202,13 +258,18 @@ GLFWwindow* configGLFW()
         return NULL;
     }
     glfwMakeContextCurrent(window); // SETS CREATED WINDOW OBJ AS THE MAIN CONTEXT ON THE CURRENT THREAD
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);  // FUNCTION IS CALLED ON WINDOW RESIZE
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);  // FUNCTION IS CALLED ON WINDOW RESIZE
+
+    // Set glfw mouse configs
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouseMoveCallback);
+    glfwSetScrollCallback(window, mouseScrollCallback);
     return window;
 }
 
 // INIT VERTEX BUFFER (VBO), INIT INDEX DRAWING BUFFER (EBO), AND CONFIG VERTEX ATTRIBUTES (VAO)
 // ---------------------------------------------------------------------------------------------
-void configBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vector<float>& vertices, const std::vector<unsigned>& indices)
+void configBuffers(unsigned& VBO, unsigned& VAO, const std::vector<float>& vertices)
 {
     // INIT & BIND VAO THAT STORES STATE CONFIGS FOR SUPPLYING INTERPRETABLE VERTEX DATA TO OPENGL
     glGenVertexArrays(1, &VAO); // // Generates the object and stores the resulting id in passed in integer
@@ -219,12 +280,6 @@ void configBuffers(unsigned& VBO, unsigned& EBO, unsigned& VAO, const std::vecto
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);  // Binds newly created object to the correct buffer type, which when updated/configured will update 'VBO' (as seen below)
     glBufferData(GL_ARRAY_BUFFER, size(vertices) * sizeof(float), vertices.data(), GL_STATIC_DRAW);  // Copies vertex data into the buffer
-
-    // INIT, BIND & SET EBO THAT STORES INDEX DATA
-    // glGenBuffers(1, &EBO);
-
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, size(indices) * sizeof(unsigned), indices.data(), GL_STATIC_DRAW);
 
     // CONFIG VAO
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);                     // Describes to OpenGL how to interpet vertex POSITION data
@@ -283,16 +338,76 @@ void loadTexture(unsigned& texture, std::string imagePath, GLenum sWrap, GLenum 
 
 
 // PROCESSES INPUT BY QUERING GLFW ABOUT CURRENT FRAME
+// ---------------------------------------------------
 void processInput(GLFWwindow *window)
 {
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)   // GLFW_RELEASE RETURNED FROM GetKey IF NOT PRESSED 
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)   // GLFW_RELEASE RETURNED FROM GetKey IF NOT PRESSED 
         glfwSetWindowShouldClose(window, true);
+
+    // FORWARD
+    else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        vec3 xzNormal = vec3(0.0f, 1.0f, 0.0f);
+        vec3 forwardProject = MainCam.forward - dot(MainCam.forward, xzNormal) * xzNormal; // Vector in same dir projected onto xz plane
+        MainCam.pos += MainCam.speed * TimeStruct.deltaTime * normalize(forwardProject);
+    }
+    // BACKWARD
+    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        vec3 xzNormal = vec3(0.0f, 1.0f, 0.0f);
+        vec3 forwardProject = MainCam.forward - dot(MainCam.forward, xzNormal) * xzNormal; // Vector in same dir projected onto xz plane
+        MainCam.pos -= MainCam.speed * TimeStruct.deltaTime * normalize(forwardProject);
+    }
+    // RIGHT
+    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        MainCam.pos += MainCam.speed * TimeStruct.deltaTime * normalize(cross(MainCam.forward, MainCam.up));
+    // LEFT
+    else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        MainCam.pos -= MainCam.speed * TimeStruct.deltaTime * normalize(cross(MainCam.forward, MainCam.up));
+    // UP
+    else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        MainCam.pos += MainCam.speed * TimeStruct.deltaTime * MainCam.up;
+    // DOWN
+    else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        MainCam.pos -= MainCam.speed * TimeStruct.deltaTime * MainCam.up;
 }
 
 
-// CALLBACK FUNC THAT SETS SIZE OF RENDERING SPACE WITH RESPECT TO WINDOW OBJ
-// --------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+//  SETS SIZE OF RENDERING SPACE WITH RESPECT TO WINDOW OBJ
+// --------------------------------------------------------
+void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
-    glViewport(0, 0, width, height);    
+    glViewport(0, 0, width, height);
+    Mouse.prevPos = vec2(width / 2.0f, height / 2.0f);
+}
+
+void mouseMoveCallback(GLFWwindow* window, double mouseX, double mouseY)
+{
+    vec2 curPos = vec2((float)mouseX, (float)mouseY);
+
+    if (Mouse.first) // Initially true
+    {
+        Mouse.prevPos = curPos;
+        Mouse.first = false;
+    }
+
+    vec2 deltaMouse = (curPos - Mouse.prevPos) * Mouse.sensitivity;
+    deltaMouse.y *= -1; // Reverse since y-coordinates range from bottom to top
+    Mouse.prevPos = curPos;
+
+    MainCam.yawPitch += deltaMouse;
+
+    MainCam.yawPitch.y = clamp(MainCam.yawPitch.y, -89.0f, 89.0f);  // Constrain pitch
+
+    // Calculate resulting direction
+    vec3 newforward;
+    newforward.x = cos(radians(MainCam.yawPitch.x)) * cos(radians(MainCam.yawPitch.y));
+    newforward.y = sin(radians(MainCam.yawPitch.y));
+    newforward.z = sin(radians(MainCam.yawPitch.x)) * cos(radians(MainCam.yawPitch.y));
+    MainCam.forward = normalize(newforward);
+}
+
+void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    MainCam.fov = clamp(MainCam.fov - (float)yoffset, 1.0f, 45.0f);
 }
