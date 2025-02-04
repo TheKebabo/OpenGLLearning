@@ -112,7 +112,7 @@ int main()
         // -------------
         // Render points(s)
         glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO if present) so OpenGL correctly uses vertex data
-        glDrawArrays(GL_LINE_STRIP, 0, 4);
+        glDrawArrays(GL_LINE_STRIP, 0, vertices.size());
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
         // -----------------------------------------
@@ -169,9 +169,9 @@ GLFWwindow* configGLFW()
     return window;
 }
 
-// INIT VERTEX BUFFER (VBO) AND CONFIG VERTEX ATTRIBUTES (VAO)
+// INIT VERTEX BUFFER (VBO), INIT INDEX DRAWING BUFFER (EBO), AND CONFIG VERTEX ATTRIBUTES (VAO)
 // ---------------------------------------------------------------------------------------------
-void configBuffers(unsigned& VBO, unsigned& VAO, const std::vector<float>& times)
+void configBuffers(unsigned& VBO, unsigned& VAO, const std::vector<float>& vertices)
 {
     // INIT & BIND VAO THAT STORES STATE CONFIGS FOR SUPPLYING INTERPRETABLE VERTEX DATA TO OPENGL
     glGenVertexArrays(1, &VAO); // // Generates the object and stores the resulting id in passed in integer
@@ -181,14 +181,12 @@ void configBuffers(unsigned& VBO, unsigned& VAO, const std::vector<float>& times
     glGenBuffers(1, &VBO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);  // Binds newly created object to the correct buffer type, which when updated/configured will update 'VBO' (as seen below)
-    glBufferData(GL_ARRAY_BUFFER, size(times) * sizeof(float), times.data(), GL_STATIC_DRAW);  // Copies vertex data into the buffer
+    glBufferData(GL_ARRAY_BUFFER, size(vertices) * sizeof(float), vertices.data(), GL_STATIC_DRAW);  // Copies vertex data into the buffer
 
     // CONFIG VAO
-    glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 0, (void*)0);   // delta time inputs (stride = 0, so tightly packed)
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);   // position inputs
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);                     // Describes to OpenGL how to interpet vertex POSITION data (stride = 0, so tightly packed)
     // Enable vertex attributes at location = n, since they are disabled by default
     glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
 
     // UNBIND VBO FROM CURRENT ACTIVE BUFFER
     glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after

@@ -1,26 +1,16 @@
 #version 330 core
-layout (location = 0) in float dt;   // delta time
-layout (location = 1) in float prevPoint;
+layout (location = 0) in vec3 aPos;
+layout (location = 2) in vec2 aTexCoord;
 
-// Diff eq. parameter uniforms
-uniform float a;
-uniform float b;
-uniform float c;
-// Matrix uniforms
+// Passed to fragment shader
+out vec2 texCoordToFrag;
+
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
 void main()
 {
-    gl_Position = projection * view * model * solve_lorenz();
-}
-
-vec3 solve_lorenz()
-{
-    float x = prevPoint.x;  float y = prevPoint.y;  float z = prevPoint.z;
-    float newX = a * (y - x) * dt;
-    float newY = (x * (b - z) - y) * dt;
-    float newZ = (x*y - c*z) * dt;
-    return vec3(newX, newY, newZ);
+    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    texCoordToFrag = aTexCoord;
 }
