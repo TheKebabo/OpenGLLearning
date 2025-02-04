@@ -95,10 +95,10 @@ public:
                 Pos -= velocity * Right;
                 break;
             case UP:    
-                Pos += velocity * Up;
+                Pos += velocity * WorldUp;
                 break;
             case DOWN:
-                Pos -= velocity * Up;
+                Pos -= velocity * WorldUp;
                 break;
         };
     }
