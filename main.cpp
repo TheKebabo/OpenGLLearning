@@ -21,6 +21,7 @@ using namespace glm;
 // SETTINGS
 // --------
 int SCR_WIDTH = 800, SCR_HEIGHT = 600; 
+const unsigned TEXTURE_WIDTH = 512, TEXTURE_HEIGHT = 512;
 
 
 // FUNCTIONS
@@ -43,7 +44,7 @@ Camera mainCam;
 struct {
     float deltaTime = 0.0f;	// Time between current frame and last frame
     float lastFrame = 0.0f; // Time of last frame
-} TimeStruct;
+} Time;
 
 int main()
 {
@@ -60,72 +61,77 @@ int main()
         return -1;
     }
 
-    glEnable(GL_DEPTH_TEST);
-
-    // BUILD & COMPILE SHADER PROGRAM
-    // ------------------------------
+    // BUILD & COMPILE SHADER PROGRAMS
+    // -------------------------------
     VFShaderProgram* mainShader = new VFShaderProgram("src//shaders//vertexShader.vs", "src//shaders//fragmentShader.fs");
-    
-    // INIT VERTEX DATA
+    ComputeShaderProgram* computeShader = new ComputeShaderProgram("src//shaders//computeShader.glsl");
+
+    mainShader->use();
+    mainShader->setInt("tex", 0);
+
+    // QUAD VERTEX DATA
     // ----------------
     std::vector<float> vertices = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.5f,  0.5f, 0.0f,
-        -0.5f,  0.5f, 0.0f,
+        // pos data             // texture data
+        -1.0f, -1.0f, 0.0f,     0.0f, 0.0f,
+         0.0f, -1.0f, 0.0f,     1.0f, 0.0f,
+         0.0f,  0.0f, 0.0f,     1.0f, 1.0f,
+        -1.0f,  0.0f, 0.0f,     0.0f, 1.0f,
     };
 
-    // CONFIG VBOs, VAOs
-    // -----------------
     unsigned VBO, VAO;
     configBuffers(VBO, VAO, vertices);
 
-    // Activate the shader program
-    mainShader->use();
+    // CREATE CUSTOM TEXTURE
+    // ---------------------
+    unsigned texture;
+    glGenTextures(1, &texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
 
-    // OBJECT TRANSFORMATIONS
-    // ----------------------
-    mat4 model = mat4(1.0f);      // (LOCAL -> WORLD): specifies the local-space transformations of coordinates on an object
-    mat4 view = mat4(1.0f);       // (WORLD -> VIEW): specifies the position of the camera relative to world-space coordinates
-    mat4 projection = mat4(1.0f); // (VIEW -> CLIP) - specifies how the 3D coordinates should be transformed to a 2D viewport
-    
-    model = translate(model, vec3(0.0f, 0.0f, -2.5f));
-    mainShader->setMat4("model", GL_FALSE, value_ptr(model));
+    glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+
+    glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
 
     // RENDER LOOP
     // -----------
     while(!glfwWindowShouldClose(window))
     {
+        // Calculate delta time
+        float currentFrame = glfwGetTime();
+        Time.deltaTime = currentFrame - Time.lastFrame;
+        Time.lastFrame = currentFrame; 
+
         // INPUT
         // -----
         processInput(window);
 
         // RENDER
         // ------
-        // Clear colour & depth buffers
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        view = mainCam.GetViewMatrix();
-        projection = perspective(radians(mainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        mainShader->setMat4("view", GL_FALSE, value_ptr(view));
-        mainShader->setMat4("projection", GL_FALSE, value_ptr(projection));
+        // Activate the compute shader program
+        computeShader->use();
+        glDispatchCompute((unsigned)TEXTURE_WIDTH, (unsigned)TEXTURE_HEIGHT, 1);
 
-        // RENDER LORENZ
-        // -------------
-        // Render points(s)
-        glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO if present) so OpenGL correctly uses vertex data
-        glDrawArrays(GL_LINE_STRIP, 0, vertices.size());
+        // Make sure writing to image has finished before read
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        // Render image to quad
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        mainShader->use();
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
         // -----------------------------------------
         glfwSwapBuffers(window);    // For reader - search 'double buffer'
         glfwPollEvents();
-
-        // Calculate delta time
-        float currentFrame = glfwGetTime();
-        TimeStruct.deltaTime = currentFrame - TimeStruct.lastFrame;
-        TimeStruct.lastFrame = currentFrame; 
     }
 
     // OPTIONAL: DE-ALLOC ALL RESOURCES ONCE PURPOSES ARE OUTLIVED
@@ -187,9 +193,11 @@ void configBuffers(unsigned& VBO, unsigned& VAO, const std::vector<float>& verti
     glBufferData(GL_ARRAY_BUFFER, size(vertices) * sizeof(float), vertices.data(), GL_STATIC_DRAW);  // Copies vertex data into the buffer
 
     // CONFIG VAO
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);                     // Describes to OpenGL how to interpet vertex POSITION data (stride = 0, so tightly packed)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), (void*)0);    // Describes to OpenGL how to interpet vertex POSITION data
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), (void*)(3 * sizeof(float)));                       // Describes to OpenGL how to interpet vertex TEXTURE data
     // Enable vertex attributes at location = n, since they are disabled by default
     glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
 
     // UNBIND VBO FROM CURRENT ACTIVE BUFFER
     glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
@@ -246,17 +254,17 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)   // GLFW_RELEASE RETURNED FROM GetKey IF NOT PRESSED 
         glfwSetWindowShouldClose(window, true);
     else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(FORWARD, TimeStruct.deltaTime);
+        mainCam.ProcessKeyboard(FORWARD, Time.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(BACKWARD, TimeStruct.deltaTime);
+        mainCam.ProcessKeyboard(BACKWARD, Time.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(RIGHT, TimeStruct.deltaTime);
+        mainCam.ProcessKeyboard(RIGHT, Time.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(LEFT, TimeStruct.deltaTime);
+        mainCam.ProcessKeyboard(LEFT, Time.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(UP, TimeStruct.deltaTime);
+        mainCam.ProcessKeyboard(UP, Time.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(DOWN, TimeStruct.deltaTime);
+        mainCam.ProcessKeyboard(DOWN, Time.deltaTime);
 }
 
 
