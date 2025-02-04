@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 // From vertex shader
 in vec3 colToFrag;

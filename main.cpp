@@ -1,12 +1,15 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "shader.h"
+
+#include "vf_shader_program.h"
+#include "compute_shader_program.h"
 #include "camera.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -61,7 +64,7 @@ int main()
 
     // BUILD & COMPILE SHADER PROGRAM
     // ------------------------------
-    Shader* shader = new Shader("src//vertexShader.vs", "src//fragmentShader.fs");
+    VFShaderProgram* mainShader = new VFShaderProgram("src//shaders//vertexShader.vs", "src//shaders//fragmentShader.fs");
     
     // INIT VERTEX DATA
     // ----------------
@@ -78,7 +81,7 @@ int main()
     configBuffers(VBO, VAO, vertices);
 
     // Activate the shader program
-    shader->use();
+    mainShader->use();
 
     // OBJECT TRANSFORMATIONS
     // ----------------------
@@ -87,7 +90,7 @@ int main()
     mat4 projection = mat4(1.0f); // (VIEW -> CLIP) - specifies how the 3D coordinates should be transformed to a 2D viewport
     
     model = translate(model, vec3(0.0f, 0.0f, -2.5f));
-    shader->setMat4("model", GL_FALSE, value_ptr(model));
+    mainShader->setMat4("model", GL_FALSE, value_ptr(model));
 
     // RENDER LOOP
     // -----------
@@ -105,8 +108,8 @@ int main()
         
         view = mainCam.GetViewMatrix();
         projection = perspective(radians(mainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        shader->setMat4("view", GL_FALSE, value_ptr(view));
-        shader->setMat4("projection", GL_FALSE, value_ptr(projection));
+        mainShader->setMat4("view", GL_FALSE, value_ptr(view));
+        mainShader->setMat4("projection", GL_FALSE, value_ptr(projection));
 
         // RENDER LORENZ
         // -------------
@@ -129,7 +132,7 @@ int main()
     // -----------------------------------------------------------
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    delete shader;
+    delete mainShader;
 
     // GLFW: TERMINATE GLFW, CLEARING ALL PREVIOUSLY ALLOCATED GLFW RESOURCES
     glfwTerminate();
@@ -146,7 +149,7 @@ GLFWwindow* configGLFW()
         std::cout << "Failed to init GLFW" << std::endl;
         return NULL;
     }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   
