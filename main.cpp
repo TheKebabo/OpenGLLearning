@@ -63,94 +63,31 @@ int main()
     // ------------------------------
     Shader* shader = new Shader("src//vertexShader.vs", "src//fragmentShader.fs");
     
-    // INIT VERTEX & INDEX DATA
-    // ------------------------
-    std::vector<float> containerVertices = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-    std::vector<float> floorVertices = {
-        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f,
-        0.5f, -0.5f, 0.0f,  1.0f, 0.0f,
-        0.5f,  0.5f, 0.0f,  1.0f, 1.0f,
-        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,
-    };
-
-    std::vector<unsigned> floorIndices = {
-        0, 1, 2,
-        2, 3, 0
+    // INIT VERTEX DATA
+    // ----------------
+    std::vector<float> vertices = {
+        -0.5f, -0.5f, 0.0f,
+        0.5f, -0.5f, 0.0f,
+        0.5f,  0.5f, 0.0f,
+        -0.5f,  0.5f, 0.0f,
     };
 
     // CONFIG VBOs, VAOs
     // -----------------
-    unsigned VBO1, VAO1;
-    configBuffers(VBO1, VAO1, containerVertices);
-
-    unsigned VBO2, VAO2;
-    configBuffers(VBO2, VAO2, floorVertices);
-
-    // LOAD TEXTURES
-    // -------------
-    unsigned wallTexture, floorTexture;
-    loadTexture(wallTexture, "textures//wall.png", GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
-    loadTexture(floorTexture, "textures//face1.png", GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    unsigned VBO, VAO;
+    configBuffers(VBO, VAO, vertices);
 
     // Activate the shader program
     shader->use();
-    // Set each uniform sampler to the correct texture unit (only 1 atm)
-    shader->setInt("ourTexture", 0);
 
     // OBJECT TRANSFORMATIONS
     // ----------------------
-    mat4 containerModel = mat4(1.0f);      // (LOCAL -> WORLD): specifies the local-space transformations of coordinates on an object
-    mat4 floorModel = mat4(1.0f);
-
+    mat4 model = mat4(1.0f);      // (LOCAL -> WORLD): specifies the local-space transformations of coordinates on an object
     mat4 view = mat4(1.0f);       // (WORLD -> VIEW): specifies the position of the camera relative to world-space coordinates
     mat4 projection = mat4(1.0f); // (VIEW -> CLIP) - specifies how the 3D coordinates should be transformed to a 2D viewport
-
-    containerModel = translate(containerModel, vec3(0.0f, 0.0, -3.0f));
-    floorModel = rotate(floorModel, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
-    floorModel = translate(floorModel, vec3(0.0f, 0.0f, 3.0f));
-    floorModel = scale(floorModel, vec3(10.0f, 10.0f, 10.0f));
+    
+    model = translate(model, vec3(0.0f, 0.0f, -2.5f));
+    shader->setMat4("model", GL_FALSE, value_ptr(model));
 
     // RENDER LOOP
     // -----------
@@ -171,32 +108,11 @@ int main()
         shader->setMat4("view", GL_FALSE, value_ptr(view));
         shader->setMat4("projection", GL_FALSE, value_ptr(projection));
 
-        // RENDER CONTAINER
-        // ----------------
-        // Bind textures to corresponding texture units (only 1 atm)
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, wallTexture);
-
-        // Update model matrix
-        containerModel = rotate(containerModel, radians(0.5f), vec3(0.5f, 1.0f, 0.0f));    // Rotate over time
-        shader->setMat4("model", GL_FALSE, value_ptr(containerModel));
-
-        // Render triangle(s)
-        glBindVertexArray(VAO1); // Binds the defined VAO (and automatically the EBO if present) so OpenGL correctly uses vertex data
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        // RENDER FLOOR
-        // ------------
-        // Bind textures to corresponding texture units (only 1 atm)
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, floorTexture);
-        
-        // Change to correct model matrix
-        shader->setMat4("model", GL_FALSE, value_ptr(floorModel));
-
-        // Render triangle(s)
-        glBindVertexArray(VAO2); // Binds the defined VAO (and automatically the EBO if present) so OpenGL correctly uses vertex data
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, floorIndices.data());
+        // RENDER LORENZ
+        // -------------
+        // Render points(s)
+        glBindVertexArray(VAO); // Binds the defined VAO (and automatically the EBO if present) so OpenGL correctly uses vertex data
+        glDrawArrays(GL_LINE_STRIP, 0, vertices.size());
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
         // -----------------------------------------
@@ -211,10 +127,8 @@ int main()
 
     // OPTIONAL: DE-ALLOC ALL RESOURCES ONCE PURPOSES ARE OUTLIVED
     // -----------------------------------------------------------
-    unsigned VAOs[2] = {VAO1, VAO2};
-    unsigned VBOs[2] = {VBO1, VBO2};
-    glDeleteVertexArrays(2, VAOs);
-    glDeleteBuffers(2, VBOs);
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
     delete shader;
 
     // GLFW: TERMINATE GLFW, CLEARING ALL PREVIOUSLY ALLOCATED GLFW RESOURCES
@@ -270,12 +184,9 @@ void configBuffers(unsigned& VBO, unsigned& VAO, const std::vector<float>& verti
     glBufferData(GL_ARRAY_BUFFER, size(vertices) * sizeof(float), vertices.data(), GL_STATIC_DRAW);  // Copies vertex data into the buffer
 
     // CONFIG VAO
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);                     // Describes to OpenGL how to interpet vertex POSITION data
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));   // Describes to OpenGL how to interpet vertex TEXTURE data
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);                     // Describes to OpenGL how to interpet vertex POSITION data (stride = 0, so tightly packed)
     // Enable vertex attributes at location = n, since they are disabled by default
     glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
 
     // UNBIND VBO FROM CURRENT ACTIVE BUFFER
     glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
