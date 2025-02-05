@@ -14,10 +14,10 @@ void main() {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	
     float speedX = 100;
-    float speedT = 250;
+    float speedY = 100;
 
     colour.x = mod(float(texelCoord.x) + time * speedX, 1000) / (gl_NumWorkGroups.x);
-    colour.x = mod(float(texelCoord.y) + time * speedY, 1000) / (gl_NumWorkGroups.y);
+    colour.y = mod(float(texelCoord.y) + time * speedY, 1000) / (gl_NumWorkGroups.y);
 	
     imageStore(imgOutput, texelCoord, colour);
 }

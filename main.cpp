@@ -141,7 +141,7 @@ int main()
     while(!glfwWindowShouldClose(window))
     {
         // Calculate delta time
-        Time.Update(true);
+        Time.Update(false);
 
         // INPUT
         // -----
