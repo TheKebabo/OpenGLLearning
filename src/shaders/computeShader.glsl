@@ -1,6 +1,6 @@
 #version 430 core
 
-layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;   // this shader is executed for every pixel of image (1 px per work group)
+layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;
 
 // images
 layout (rgba32f, binding = 0) uniform image2D imgOutput;    // internal format is the same as the host program's texutre format

@@ -21,7 +21,7 @@ using namespace glm;
 // SETTINGS
 // --------
 int SCR_WIDTH = 800, SCR_HEIGHT = 600; 
-const unsigned TEXTURE_WIDTH = 512, TEXTURE_HEIGHT = 512;
+const unsigned TEXTURE_WIDTH = 1000, TEXTURE_HEIGHT = 1000;
 
 
 // FUNCTIONS
@@ -30,6 +30,7 @@ const unsigned TEXTURE_WIDTH = 512, TEXTURE_HEIGHT = 512;
 GLFWwindow* configGLFW();
 void configBuffers(unsigned& VBO, unsigned& VAO, const std::vector<float>& vertices);
 void loadTexture(unsigned& texture, std::string imagePath, GLenum sWrap, GLenum tWrap, GLenum minFilter, GLenum maxFilter);
+void outputGLLimits();
 
 // Callbacks
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
@@ -40,7 +41,8 @@ void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 // GLOBALS
 // -------
-Camera mainCam;
+Camera MainCam;
+bool ShowFPS = false;
 class Time {
 public:
     float deltaTime = 0.0f;	// Time between current frame and last frame
@@ -63,7 +65,7 @@ public:
         }
     }
 private:
-    unsigned frameCounterMax = 1500;
+    unsigned frameCounterMax = 10000;
 } Time;
 
 int main()
@@ -141,7 +143,7 @@ int main()
     while(!glfwWindowShouldClose(window))
     {
         // Calculate delta time
-        Time.Update(true);
+        Time.Update(ShowFPS);
 
         // INPUT
         // -----
@@ -163,8 +165,8 @@ int main()
 
         mainShader->use();
 
-        view = mainCam.GetViewMatrix();
-        projection = glm::perspective(glm::radians(mainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        view = MainCam.GetViewMatrix();
+        projection = glm::perspective(glm::radians(MainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         mainShader->setMat4_w_Loc(0, GL_FALSE, value_ptr(model));
         mainShader->setMat4_w_Loc(1, GL_FALSE, value_ptr(view));
         mainShader->setMat4_w_Loc(2, GL_FALSE, value_ptr(projection));
@@ -316,18 +318,47 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)   // GLFW_RELEASE RETURNED FROM GetKey IF NOT PRESSED 
         glfwSetWindowShouldClose(window, true);
+    else if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+        ShowFPS = !ShowFPS;
+
     else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(FORWARD, Time.deltaTime);
+        MainCam.ProcessKeyboard(FORWARD, Time.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(BACKWARD, Time.deltaTime);
+        MainCam.ProcessKeyboard(BACKWARD, Time.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(RIGHT, Time.deltaTime);
+        MainCam.ProcessKeyboard(RIGHT, Time.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(LEFT, Time.deltaTime);
+        MainCam.ProcessKeyboard(LEFT, Time.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(UP, Time.deltaTime);
+        MainCam.ProcessKeyboard(UP, Time.deltaTime);
     else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        mainCam.ProcessKeyboard(DOWN, Time.deltaTime);
+        MainCam.ProcessKeyboard(DOWN, Time.deltaTime);
+    
+}
+
+void outputGLLimits()
+{
+    // query limitations
+	int max_compute_work_group_count[3];
+	int max_compute_work_group_size[3];
+	int max_compute_work_group_invocations;
+
+	for (int idx = 0; idx < 3; idx++) {
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, idx, &max_compute_work_group_count[idx]);
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, idx, &max_compute_work_group_size[idx]);
+	}	
+	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &max_compute_work_group_invocations);
+
+	std::cout << "OpenGL Limitations: " << std::endl;
+	std::cout << "maximum number of work groups in X dimension " << max_compute_work_group_count[0] << std::endl;
+	std::cout << "maximum number of work groups in Y dimension " << max_compute_work_group_count[1] << std::endl;
+	std::cout << "maximum number of work groups in Z dimension " << max_compute_work_group_count[2] << std::endl;
+
+	std::cout << "maximum size of a work group in X dimension " << max_compute_work_group_size[0] << std::endl;
+	std::cout << "maximum size of a work group in Y dimension " << max_compute_work_group_size[1] << std::endl;
+	std::cout << "maximum size of a work group in Z dimension " << max_compute_work_group_size[2] << std::endl;
+
+	std::cout << "Number of invocations in a single local work group that may be dispatched to a compute shader " << max_compute_work_group_invocations << std::endl;
 }
 
 
@@ -336,15 +367,15 @@ void processInput(GLFWwindow *window)
 void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
-    mainCam.Mouse.PrevPos = vec2(width / 2.0f, height / 2.0f);
+    MainCam.Mouse.PrevPos = vec2(width / 2.0f, height / 2.0f);
 }
 
 void mouseMoveCallback(GLFWwindow* window, double mouseX, double mouseY)
 {
-    mainCam.ProcessMouseMovement(mouseX, mouseY, true);
+    MainCam.ProcessMouseMovement(mouseX, mouseY, true);
 }
 
 void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    mainCam.ProcessMouseScroll(yoffset);
+    MainCam.ProcessMouseScroll(yoffset);
 }
