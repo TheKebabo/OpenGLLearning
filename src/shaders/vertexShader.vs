@@ -4,9 +4,9 @@ layout (location = 1) in vec2 aTexCoord;
 
 out vec2 texCoordToFrag;
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+layout (location = 0) uniform mat4 model;
+layout (location = 1) uniform mat4 view;
+layout (location = 2) uniform mat4 projection;
 
 void main()
 {

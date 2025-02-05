@@ -87,7 +87,7 @@ int main()
     ComputeShaderProgram* computeShader = new ComputeShaderProgram("src//shaders//computeShader.glsl");
 
     mainShader->use();
-    mainShader->setInt("tex", 0);
+    mainShader->setInt_w_Name("tex", 0);
 
     // QUAD VERTEX DATA
     // ----------------
@@ -152,6 +152,7 @@ int main()
         // ----------------
         // Activate and dispatch the compute shader program
         computeShader->use();
+        computeShader->setFloat_w_Loc(0, glfwGetTime());
         glDispatchCompute((unsigned)TEXTURE_WIDTH, (unsigned)TEXTURE_HEIGHT, 1);
 
         // Make sure writing to image has finished before read
@@ -161,9 +162,9 @@ int main()
 
         view = mainCam.GetViewMatrix();
         projection = glm::perspective(glm::radians(mainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        mainShader->setMat4("view", GL_FALSE, value_ptr(view));
-        mainShader->setMat4("projection", GL_FALSE, value_ptr(projection));
-        mainShader->setMat4("model", GL_FALSE, value_ptr(model));
+        mainShader->setMat4_w_Loc(0, GL_FALSE, value_ptr(model));
+        mainShader->setMat4_w_Loc(1, GL_FALSE, value_ptr(view));
+        mainShader->setMat4_w_Loc(2, GL_FALSE, value_ptr(projection));
 
         // Render image to quad
         glActiveTexture(GL_TEXTURE0);
@@ -175,7 +176,7 @@ int main()
 
         // Render reference quad
         // ---------------------
-        mainShader->setMat4("model", GL_FALSE, value_ptr(refQuadmodel));
+        mainShader->setMat4_w_Loc(0, GL_FALSE, value_ptr(refQuadmodel));
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, refQuadTexture);
