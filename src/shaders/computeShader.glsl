@@ -1,6 +1,6 @@
 #version 430 core
 
-layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;   // this shader is executed for every pixel of image (1 px per work group)
+layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;   // this shader is executed for every pixel of image (1 px per work group)
 
 // images
 layout (rgba32f, binding = 0) uniform image2D imgOutput;    // internal format is the same as the host program's texutre format
@@ -16,8 +16,8 @@ void main() {
     float speedX = 100;
     float speedY = 100;
 
-    colour.x = mod(float(texelCoord.x) + time * speedX, 1000) / (gl_NumWorkGroups.x);
-    colour.y = mod(float(texelCoord.y) + time * speedY, 1000) / (gl_NumWorkGroups.y);
+    colour.x = mod(float(texelCoord.x) + time * speedX, textureWidth) / (gl_NumWorkGroups.x * gl_WorkGroupSize.x);
+    colour.y = mod(float(texelCoord.y) + time * speedY, textureWidth) / (gl_NumWorkGroups.y * gl_WorkGroupSize.y);
 	
     imageStore(imgOutput, texelCoord, colour);
 }

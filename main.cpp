@@ -63,7 +63,7 @@ public:
         }
     }
 private:
-    unsigned frameCounterMax = 750;
+    unsigned frameCounterMax = 1500;
 } Time;
 
 int main()
@@ -141,7 +141,7 @@ int main()
     while(!glfwWindowShouldClose(window))
     {
         // Calculate delta time
-        Time.Update(false);
+        Time.Update(true);
 
         // INPUT
         // -----
@@ -156,7 +156,7 @@ int main()
         // Activate and dispatch the compute shader program
         computeShader->use();
         computeShader->setFloat_w_Loc(0, glfwGetTime());
-        glDispatchCompute((unsigned)TEXTURE_WIDTH, (unsigned)TEXTURE_HEIGHT, 1);
+        glDispatchCompute((unsigned)TEXTURE_WIDTH / 10, (unsigned)TEXTURE_HEIGHT / 10, 1);
 
         // Make sure writing to image has finished before read
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
