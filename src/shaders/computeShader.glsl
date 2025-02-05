@@ -10,13 +10,14 @@ layout (location = 0) uniform float time;
 layout (location = 1) uniform float textureWidth;
 
 void main() {
-    vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 colour = vec4(0.0, 0.0, 0.0, 1.0);
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	
-    float speed = 100;
+    float speedX = 100;
+    float speedT = 250;
 
-    value.x = mod(float(texelCoord.x) + t * speed, textureWidth) / (gl_NumWorkGroups.x);
-    value.y = float(texelCoord.y)/(gl_NumWorkGroups.y);
+    colour.x = mod(float(texelCoord.x) + time * speedX, 1000) / (gl_NumWorkGroups.x);
+    colour.x = mod(float(texelCoord.y) + time * speedY, 1000) / (gl_NumWorkGroups.y);
 	
-    imageStore(imgOutput, texelCoord, value);
+    imageStore(imgOutput, texelCoord, colour);
 }
