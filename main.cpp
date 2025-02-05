@@ -73,14 +73,17 @@ int main()
     // ----------------
     std::vector<float> vertices = {
         // pos data             // texture data
-        -1.0f, -1.0f, 0.0f,     0.0f, 0.0f,
-         0.0f, -1.0f, 0.0f,     1.0f, 0.0f,
-         0.0f,  0.0f, 0.0f,     1.0f, 1.0f,
-        -1.0f,  0.0f, 0.0f,     0.0f, 1.0f,
+        -1.0f,  1.0f, 0.0f,     0.0f, 1.0f,     // top-left
+        -1.0f, -1.0f, 0.0f,     0.0f, 0.0f,     // bottom-left
+         1.0f,  1.0f, 0.0f,     1.0f, 1.0f,     // top-right
+         1.0f, -1.0f, 0.0f,     1.0f, 0.0f,     // bottom-right
     };
 
     unsigned VBO, VAO;
     configBuffers(VBO, VAO, vertices);
+    
+    unsigned refQuadVBO, refQuadVAO;
+    configBuffers(refQuadVBO, refQuadVAO, vertices);
 
     // CREATE CUSTOM TEXTURE
     // ---------------------
@@ -93,11 +96,22 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-
     glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
-    glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
+    // REFERENCE QUAD TEXTURE
+    // ----------------------
+    unsigned refQuadTexture;
+    loadTexture(refQuadTexture, "textures//face1.png", GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINE, GL_LINEAR);
+
+    mat4 model = mat4(1.0f);
+    mat4 refQuadmodel = mat4(1.0f);
+    mat4 view = mat4(1.0f);
+    mat4 projection = mat4(1.0f);
+
+    model = translate(model, vec3(-1.5f, 0.0f, -4.0f));
+    refQuadmodel = translate(refQuadmodel, vec3(1.5f, 0.0f, -4.0f));
+
+    glEnable(GL_DEPTH_TEST);
 
     // RENDER LOOP
     // -----------
@@ -113,18 +127,42 @@ int main()
         processInput(window);
 
         // RENDER
-        // ------
-        // Activate the compute shader program
+        // ------        
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Render main quad
+        // ----------------
+        // Activate and dispatch the compute shader program
         computeShader->use();
         glDispatchCompute((unsigned)TEXTURE_WIDTH, (unsigned)TEXTURE_HEIGHT, 1);
 
         // Make sure writing to image has finished before read
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        // Render image to quad
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         mainShader->use();
+
+        view = mainCam.GetViewMatrix();
+        projection = glm::perspective(glm::radians(mainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        mainShader->setMat4("view", GL_FALSE, value_ptr(view));
+        mainShader->setMat4("projection", GL_FALSE, value_ptr(projection));
+        mainShader->setMat4("model", GL_FALSE, value_ptr(model));
+
+        // Render image to quad
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+
         glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
+
+        // Render reference quad
+        // ---------------------
+        mainShader->setMat4("model", GL_FALSE, value_ptr(refQuadmodel));
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, refQuadTexture);
+
+        glBindVertexArray(refQuadVAO);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         glBindVertexArray(0);
 
@@ -136,8 +174,10 @@ int main()
 
     // OPTIONAL: DE-ALLOC ALL RESOURCES ONCE PURPOSES ARE OUTLIVED
     // -----------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    unsigned VBOs[2] = { VBO, refQuadVBO };
+    unsigned VAOs[2] = { VAO, refQuadVAO };
+    glDeleteBuffers(2, VBOs);
+    glDeleteVertexArrays(2, VAOs);
     delete mainShader;
 
     // GLFW: TERMINATE GLFW, CLEARING ALL PREVIOUSLY ALLOCATED GLFW RESOURCES
