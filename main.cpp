@@ -41,9 +41,29 @@ void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 // GLOBALS
 // -------
 Camera mainCam;
-struct {
+class Time {
+public:
     float deltaTime = 0.0f;	// Time between current frame and last frame
     float lastFrame = 0.0f; // Time of last frame
+    unsigned fpsCounter = 0;    // Ensures fps isn't written to frequently (cout would slow down program)
+
+    void Update(bool writeFPS)
+    {
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+        if (writeFPS)
+        {
+            if(frameCounterMax > 500)
+            {
+                std::cout << "FPS: " << 1.0f / deltaTime << std::endl;
+                fpsCounter = 0;
+            } else
+                fpsCounter++;
+        }
+    }
+private:
+    unsigned frameCounterMax = 750;
 } Time;
 
 int main()
@@ -118,9 +138,7 @@ int main()
     while(!glfwWindowShouldClose(window))
     {
         // Calculate delta time
-        float currentFrame = glfwGetTime();
-        Time.deltaTime = currentFrame - Time.lastFrame;
-        Time.lastFrame = currentFrame; 
+        Time.Update(true);
 
         // INPUT
         // -----
@@ -210,6 +228,7 @@ GLFWwindow* configGLFW()
     }
     glfwMakeContextCurrent(window); // SETS CREATED WINDOW OBJ AS THE MAIN CONTEXT ON THE CURRENT THREAD
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);  // FUNCTION IS CALLED ON WINDOW RESIZE
+    glfwSwapInterval(0);    // Gets bigger refresh rate
 
     // Set glfw mouse configs
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
