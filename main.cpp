@@ -118,6 +118,9 @@ int main()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
     glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
+    computeShader->use();
+    computeShader->setFloat_w_Name("textureWidth", TEXTURE_WIDTH);
+
     // REFERENCE QUAD TEXTURE
     // ----------------------
     unsigned refQuadTexture;
@@ -128,8 +131,8 @@ int main()
     mat4 view = mat4(1.0f);
     mat4 projection = mat4(1.0f);
 
-    model = translate(model, vec3(-1.5f, 0.0f, -4.0f));
-    refQuadmodel = translate(refQuadmodel, vec3(1.5f, 0.0f, -4.0f));
+    model = translate(model, vec3(-1.5f, 0.0f, -4.5f));
+    refQuadmodel = translate(refQuadmodel, vec3(1.5f, 0.0f, -4.5f));
 
     glEnable(GL_DEPTH_TEST);
 
