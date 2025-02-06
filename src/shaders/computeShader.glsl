@@ -12,7 +12,7 @@ void main() {
 
     vec3 p = Position[idX].xyz; // grab input pos
 
-    // p += vec3(0.001);   // update in some way
+    p += vec3(0.0001);   // update in some way
 
     Position[idX].xyz = p;  // set as output pos
 }

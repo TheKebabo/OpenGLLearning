@@ -13,7 +13,7 @@ ParticleSystem::ParticleSystem(unsigned _numParticlesX = 100, unsigned _numParti
     mainShader = new VFShaderProgram("src//shaders//vertexShader.vs", "src//shaders//fragmentShader.fs");
     computeShader = new ComputeShaderProgram("src//shaders//computeShader.glsl");
 
-    initBuffers(new glm::vec3(0, 0, 0));
+    initBuffers(new glm::vec3(0, 0.0f, -15.0f));
 }
 
 ParticleSystem::~ParticleSystem()
@@ -63,7 +63,7 @@ void ParticleSystem::initPositions(std::vector<glm::vec4>& positions, glm::vec3&
 
     // Centre at 'centre'
     glm::mat4 translation = glm::mat4(1.0f);
-    translation = glm::translate(translation, -centre);
+    translation = glm::translate(translation, -(glm::vec3(INIT_CUBE_SIZE) / 2.0f - centre));
 
     // Iterate through all init positions of particles
     int particleI = 0;
@@ -90,7 +90,7 @@ void ParticleSystem::renderParticles(const glm::mat4& viewProjection)
 {
     mainShader->use();
     mainShader->setMat4_w_Loc(0, false, glm::value_ptr(viewProjection));
-    mainShader->set4Floats_w_Loc(0, 0.0f, 0.0f, 0.0f, 0.2f);    // Set colour of particles in fragment shader
+    mainShader->set4Floats_w_Loc(1, 0.15f, 0.15f, 0.15f, 0.7f);    // Set colour (location = 1) of particles in fragment shader
 
     glEnable(GL_BLEND); // don't rlly understand blending
 
