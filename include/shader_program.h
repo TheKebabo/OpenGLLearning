@@ -5,7 +5,7 @@
 #include <string>
 #include <sstream>
 
-class ShaderProgram
+class ShaderProgram // ABSTRACT CLASS
 {
 public:
     unsigned ID;
@@ -27,8 +27,8 @@ public:
     void setMat4_w_Name(const std::string &name, GLboolean transpose, const GLfloat* value) const;
     void setMat4_w_Loc(GLint location, GLboolean transpose, const GLfloat* value) const;
 protected:
-    unsigned readAndCompileShaderFile(const char* shaderPath, unsigned& shaderID);
-    void checkCompileErrors(unsigned shader, std::string shaderType);
+    unsigned readAndCompileShaderFile(const char* shaderPath, unsigned& shaderID, std::string shaderType);
+    void checkCompileErrors(unsigned& shaderID, std::string shaderType);
     void checkLinkErrors();
 };
 

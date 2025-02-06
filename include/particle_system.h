@@ -26,9 +26,9 @@ private:
     ComputeShaderProgram* computeShader;
 
     // Init position buffer and VAO, and bind to SSBO and GL_VERTEX array for compute shader and vertex/fragment shader use
-    void initBuffers();
+    void initBuffers(glm::vec3* systemCentre);
     // Particle positions calculated in cube centered at the origin
-    void initPositions(std::vector<glm::vec4>& positions);
+    void initPositions(std::vector<glm::vec4>& positions, glm::vec3& centre);
     void executeComputeShader();
     void renderParticles(const glm::mat4& viewProjection); // No model matrix needed particle positions being determined by compute shader
 };

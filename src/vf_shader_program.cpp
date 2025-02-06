@@ -4,9 +4,9 @@ VFShaderProgram::VFShaderProgram(const char* vertexPath, const char* fragmentPat
 {
     unsigned vertex = glCreateShader(GL_VERTEX_SHADER);
     unsigned fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    readAndCompileShaderFile(vertexPath, vertex);
+    readAndCompileShaderFile(vertexPath, vertex, "VERTEX");
     checkCompileErrors(vertex, "VERTEX");   // print compile errors if any
-    readAndCompileShaderFile(fragmentPath, fragment);
+    readAndCompileShaderFile(fragmentPath, fragment, "FRAGMENT");
     checkCompileErrors(fragment, "FRAGMENT");   // print compile errors if any
  
     // 2. create shader program

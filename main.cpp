@@ -80,6 +80,8 @@ int main()
         return -1;
     }
 
+    glEnable(GL_DEPTH_TEST);
+
     ParticleSystem particles(100, 100, 100);
 
     // RENDER LOOP
@@ -99,6 +101,7 @@ int main()
         glClearColor(0.75f, 0.5f, 0.3f, 1.0f);
         
         mat4 model = mat4(1.0f);
+        // model = translate(model, vec3())
         mat4 view = MainCam.GetViewMatrix();
         mat4 projection = mat4(1.0f);
         projection = perspective(radians(MainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);

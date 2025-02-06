@@ -1,5 +1,6 @@
 #include <GLAD/glad.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "particle_system.h"
 
 // PUBLICS
@@ -9,10 +10,10 @@ ParticleSystem::ParticleSystem(unsigned _numParticlesX = 100, unsigned _numParti
     totalNumParticles = numParticlesX * numParticlesY * numParticlesZ;
 
     // Init shader programs
-    mainShader = new VFShaderProgram("shaders//vertexShader.vs", "shaders//fragmentShader.fs");
-    computeShader = new ComputeShaderProgram("shaders//computeShader.glsl");
+    mainShader = new VFShaderProgram("src//shaders//vertexShader.vs", "src//shaders//fragmentShader.fs");
+    computeShader = new ComputeShaderProgram("src//shaders//computeShader.glsl");
 
-    initBuffers();
+    initBuffers(new glm::vec3(0, 0, 0));
 }
 
 ParticleSystem::~ParticleSystem()
@@ -30,10 +31,10 @@ void ParticleSystem::Render(const glm::mat4& viewProjection)
 }
 
 // PRIVATES
-void ParticleSystem::initBuffers()
+void ParticleSystem::initBuffers(glm::vec3* systemCentre)
 {
     std::vector<glm::vec4> positions(totalNumParticles);
-    initPositions(positions);
+    initPositions(positions, *systemCentre);
 
     glGenBuffers(1, &posBuffer);
 
@@ -51,14 +52,18 @@ void ParticleSystem::initBuffers()
     glBindVertexArray(0);   // Unbind VAO
 }
 
-void ParticleSystem::initPositions(std::vector<glm::vec4>& positions)
+void ParticleSystem::initPositions(std::vector<glm::vec4>& positions, glm::vec3& centre)
 {
-    float INIT_CUBE_SIZE = 2.0f;
+    float INIT_CUBE_SIZE = 5.0f;
 
     // Distance between adjacent particles
     float dx = INIT_CUBE_SIZE / (float)numParticlesX;
     float dy = INIT_CUBE_SIZE / (float)numParticlesY;
     float dz = INIT_CUBE_SIZE / (float)numParticlesZ;
+
+    // Centre at 'centre'
+    glm::mat4 translation = glm::mat4(1.0f);
+    translation = glm::translate(translation, -centre);
 
     // Iterate through all init positions of particles
     int particleI = 0;
@@ -66,6 +71,7 @@ void ParticleSystem::initPositions(std::vector<glm::vec4>& positions)
         for (unsigned y = 0; y < numParticlesX; ++y) {
             for (unsigned z = 0; z < numParticlesZ; ++z) {
                 glm::vec4 pos(dx * x, dy * y, dz * z, 1.0f);
+                pos = translation * pos;
                 positions[particleI] = pos;
                 particleI++;
             }

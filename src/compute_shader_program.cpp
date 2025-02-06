@@ -4,7 +4,7 @@ ComputeShaderProgram::ComputeShaderProgram(const char* computePath)
 {
     // 1. retrieve the computer shader source code from file path and compile
     unsigned computeShader = glCreateShader(GL_COMPUTE_SHADER);
-    readAndCompileShaderFile(computePath, computeShader);
+    readAndCompileShaderFile(computePath, computeShader, "COMPUTE");
     checkCompileErrors(computeShader, "COMPUTE");   // print compile errors if any
 
     // 2. create shader Program

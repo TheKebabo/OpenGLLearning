@@ -58,7 +58,7 @@ void ShaderProgram::setMat4_w_Loc(GLint location, GLboolean transpose, const GLf
 }
 
 // UTILITIES
-unsigned ShaderProgram::readAndCompileShaderFile(const char* shaderPath, unsigned& shaderID)
+unsigned ShaderProgram::readAndCompileShaderFile(const char* shaderPath, unsigned& shaderID, std::string shaderType)
 {
     std::string shaderCode;
     std::ifstream shaderFile;
@@ -76,7 +76,7 @@ unsigned ShaderProgram::readAndCompileShaderFile(const char* shaderPath, unsigne
     }
     catch(const std::ifstream::failure& e)
     {
-        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
+        std::cout << "ERROR::SHADER::" << shaderType << "::FILE_NOT_SUCCESFULLY_READ" << std::endl;
     }
 
     const char* shaderCodeCStr = shaderCode.c_str();
@@ -86,15 +86,15 @@ unsigned ShaderProgram::readAndCompileShaderFile(const char* shaderPath, unsigne
     return shaderID;
 }
 
-void ShaderProgram::checkCompileErrors(unsigned shader, std::string shaderType)
+void ShaderProgram::checkCompileErrors(unsigned& shaderID, std::string shaderType)
 {
     int success;
     char infoLog[512];
     
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
     if(!success)
     {
-        glGetShaderInfoLog(shader, 512, NULL, infoLog);
+        glGetShaderInfoLog(shaderID, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::" << shaderType << "::COMPILATION_FAILED\n" << infoLog << std::endl;
     };
 }
