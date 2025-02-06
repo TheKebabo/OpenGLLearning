@@ -8,8 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "vf_shader_program.h"
-#include "compute_shader_program.h"
+#include "particle_system.h"
 #include "camera.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -28,8 +27,6 @@ const unsigned TEXTURE_WIDTH = 1000, TEXTURE_HEIGHT = 1000;
 // ---------
 // Utilities
 GLFWwindow* configGLFW();
-void configBuffers(unsigned& VBO, unsigned& VAO, const std::vector<float>& vertices);
-void loadTexture(unsigned& texture, std::string imagePath, GLenum sWrap, GLenum tWrap, GLenum minFilter, GLenum maxFilter);
 void outputGLLimits();
 
 // Callbacks
@@ -83,60 +80,7 @@ int main()
         return -1;
     }
 
-    // BUILD & COMPILE SHADER PROGRAMS
-    // -------------------------------
-    VFShaderProgram* mainShader = new VFShaderProgram("src//shaders//vertexShader.vs", "src//shaders//fragmentShader.fs");
-    ComputeShaderProgram* computeShader = new ComputeShaderProgram("src//shaders//computeShader.glsl");
-
-    mainShader->use();
-    mainShader->setInt_w_Name("tex", 0);
-
-    // QUAD VERTEX DATA
-    // ----------------
-    std::vector<float> vertices = {
-        // pos data             // texture data
-        -1.0f,  1.0f, 0.0f,     0.0f, 1.0f,     // top-left
-        -1.0f, -1.0f, 0.0f,     0.0f, 0.0f,     // bottom-left
-         1.0f,  1.0f, 0.0f,     1.0f, 1.0f,     // top-right
-         1.0f, -1.0f, 0.0f,     1.0f, 0.0f,     // bottom-right
-    };
-
-    unsigned VBO, VAO;
-    configBuffers(VBO, VAO, vertices);
-    
-    unsigned refQuadVBO, refQuadVAO;
-    configBuffers(refQuadVBO, refQuadVAO, vertices);
-
-    // CREATE CUSTOM TEXTURE
-    // ---------------------
-    unsigned texture;
-    glGenTextures(1, &texture);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-    glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
-
-    computeShader->use();
-    computeShader->setFloat_w_Name("textureWidth", TEXTURE_WIDTH);
-
-    // REFERENCE QUAD TEXTURE
-    // ----------------------
-    unsigned refQuadTexture;
-    loadTexture(refQuadTexture, "textures//face1.png", GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINE, GL_LINEAR);
-
-    mat4 model = mat4(1.0f);
-    mat4 refQuadmodel = mat4(1.0f);
-    mat4 view = mat4(1.0f);
-    mat4 projection = mat4(1.0f);
-
-    model = translate(model, vec3(-1.5f, 0.0f, -4.5f));
-    refQuadmodel = translate(refQuadmodel, vec3(1.5f, 0.0f, -4.5f));
-
-    glEnable(GL_DEPTH_TEST);
+    ParticleSystem particles(100, 100, 100);
 
     // RENDER LOOP
     // -----------
@@ -152,57 +96,19 @@ int main()
         // RENDER
         // ------        
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // Render main quad
-        // ----------------
-        // Activate and dispatch the compute shader program
-        computeShader->use();
-        computeShader->setFloat_w_Loc(0, glfwGetTime());
-        glDispatchCompute((unsigned)TEXTURE_WIDTH / 10, (unsigned)TEXTURE_HEIGHT / 10, 1);
-
-        // Make sure writing to image has finished before read
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-        mainShader->use();
-
-        view = MainCam.GetViewMatrix();
-        projection = glm::perspective(glm::radians(MainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        mainShader->setMat4_w_Loc(0, GL_FALSE, value_ptr(model));
-        mainShader->setMat4_w_Loc(1, GL_FALSE, value_ptr(view));
-        mainShader->setMat4_w_Loc(2, GL_FALSE, value_ptr(projection));
-
-        // Render image to quad
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glBindVertexArray(0);
-
-        // Render reference quad
-        // ---------------------
-        mainShader->setMat4_w_Loc(0, GL_FALSE, value_ptr(refQuadmodel));
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, refQuadTexture);
-
-        glBindVertexArray(refQuadVAO);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glBindVertexArray(0);
+        glClearColor(0.75f, 0.5f, 0.3f, 1.0f);
+        
+        mat4 model = mat4(1.0f);
+        mat4 view = MainCam.GetViewMatrix();
+        mat4 projection = mat4(1.0f);
+        projection = perspective(radians(MainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        particles.Render(projection * view * model);
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
         // -----------------------------------------
         glfwSwapBuffers(window);    // For reader - search 'double buffer'
         glfwPollEvents();
     }
-
-    // OPTIONAL: DE-ALLOC ALL RESOURCES ONCE PURPOSES ARE OUTLIVED
-    // -----------------------------------------------------------
-    unsigned VBOs[2] = { VBO, refQuadVBO };
-    unsigned VAOs[2] = { VAO, refQuadVAO };
-    glDeleteBuffers(2, VBOs);
-    glDeleteVertexArrays(2, VAOs);
-    delete mainShader;
 
     // GLFW: TERMINATE GLFW, CLEARING ALL PREVIOUSLY ALLOCATED GLFW RESOURCES
     glfwTerminate();
@@ -242,75 +148,6 @@ GLFWwindow* configGLFW()
     glfwSetScrollCallback(window, mouseScrollCallback);
     return window;
 }
-
-// INIT VERTEX BUFFER (VBO), INIT INDEX DRAWING BUFFER (EBO), AND CONFIG VERTEX ATTRIBUTES (VAO)
-// ---------------------------------------------------------------------------------------------
-void configBuffers(unsigned& VBO, unsigned& VAO, const std::vector<float>& vertices)
-{
-    // INIT & BIND VAO THAT STORES STATE CONFIGS FOR SUPPLYING INTERPRETABLE VERTEX DATA TO OPENGL
-    glGenVertexArrays(1, &VAO); // // Generates the object and stores the resulting id in passed in integer
-    glBindVertexArray(VAO); // Binds 'VAO' as current active vertex array object
-
-    // INIT, BIND & SET VBO THAT STORES MANY VERTICES IN GPU MEM FOR SPEEDY GPU ACCESS
-    glGenBuffers(1, &VBO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);  // Binds newly created object to the correct buffer type, which when updated/configured will update 'VBO' (as seen below)
-    glBufferData(GL_ARRAY_BUFFER, size(vertices) * sizeof(float), vertices.data(), GL_STATIC_DRAW);  // Copies vertex data into the buffer
-
-    // CONFIG VAO
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), (void*)0);    // Describes to OpenGL how to interpet vertex POSITION data
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), (void*)(3 * sizeof(float)));                       // Describes to OpenGL how to interpet vertex TEXTURE data
-    // Enable vertex attributes at location = n, since they are disabled by default
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-
-    // UNBIND VBO FROM CURRENT ACTIVE BUFFER
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // This is allowed, the call to glVertexAttribPointer registered 'VBO' as the vertex attribute's bound VBO, so can safely unbind after
-}
-
-// CONFIG + LOAD TEXTURE (IMAGE HAS TO BE MORE > 24 BIT PER PIXEL)
-// ---------------------------------------------------------------
-void loadTexture(unsigned& texture, std::string imagePath, GLenum sWrap, GLenum tWrap, GLenum minFilter, GLenum maxFilter)
-{
-    // GEN TEXTURE GLOBJECT
-    // --------------------
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    // CONFIG WRAPPING & FILTERING
-    // ---------------------------
-    // Config texture wrapping for s & t axes (x & y)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sWrap);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tWrap);
-
-    // Config upscaling and downscaling texture filtering methods
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);   // Downscaling
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, maxFilter);   // Upscaling
-
-    // LOAD TEXTURE FROM IMAGE (IMAGE HAS TO BE MORE > 24 BIT PER PIXEL)
-    // -----------------------------------------------------------------
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true); // Loads upside-down for some reason
-    unsigned char *data = stbi_load(imagePath.c_str(), &width, &height, &nrChannels, 4);  // Set number of channels to 4 manually (don't know why)
-    nrChannels = 4; 
-    if (data)   // Use previous image data to load texture
-    {
-        // Use stbi data to determine image format
-        GLenum internalFormat = nrChannels == 4 ? GL_RGBA8 :
-            nrChannels == 3 ? GL_RGB8 : 0;
-        GLenum dataFormat = nrChannels == 4 ? GL_RGBA :
-            nrChannels == 3 ? GL_RGB : 0;
-
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);    // For reader, search 'OpenGL mipmaps'
-    }
-    else
-        std::cout << "Failed to load texture" << std::endl;  
-
-    stbi_image_free(data);  // Free image from memory
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
-
 
 // PROCESSES INPUT BY QUERING GLFW ABOUT CURRENT FRAME
 // ---------------------------------------------------

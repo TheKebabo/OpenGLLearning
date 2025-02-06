@@ -21,6 +21,7 @@ void ShaderProgram::setBool_w_Loc(GLint location, bool value) const
 {         
     glUniform1i(location, (int)value); 
 }
+
 void ShaderProgram::setInt_w_Name(const std::string &name, int value) const
 { 
     glUniform1i(glGetUniformLocation(ID, name.c_str()), value); 
@@ -29,6 +30,7 @@ void ShaderProgram::setInt_w_Loc(GLint location, int value) const
 { 
     glUniform1i(location, value); 
 }
+
 void ShaderProgram::setFloat_w_Name(const std::string &name, float value) const
 { 
     glUniform1f(glGetUniformLocation(ID, name.c_str()), value); 
@@ -37,11 +39,20 @@ void ShaderProgram::setFloat_w_Loc(GLint location, float value) const
 { 
     glUniform1f(location, value); 
 }
-void ShaderProgram::setMat4_w_Name(const std::string &name, bool transpose, const GLfloat* value) const
+void ShaderProgram::set4Floats_w_Name(const std::string &name, float value0, float value1, float value2, float value3) const
+{
+    glUniform4f(glGetUniformLocation(ID, name.c_str()), value0, value1, value2, value3);
+}
+void ShaderProgram::set4Floats_w_Loc(GLint location, float value0, float value1, float value2, float value3) const
+{
+    glUniform4f(location, value0, value1, value2, value3);
+}
+
+void ShaderProgram::setMat4_w_Name(const std::string &name, GLboolean transpose, const GLfloat* value) const
 {
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, transpose, value);
 }
-void ShaderProgram::setMat4_w_Loc(GLint location, bool transpose, const GLfloat* value) const
+void ShaderProgram::setMat4_w_Loc(GLint location, GLboolean transpose, const GLfloat* value) const
 {
     glUniformMatrix4fv(location, 1, transpose, value);
 }

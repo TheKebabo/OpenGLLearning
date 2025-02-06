@@ -15,6 +15,7 @@
                 "${workspaceFolder}\\src\\shader_program.cpp",
                 "${workspaceFolder}\\src\\vf_shader_program.cpp",
                 "${workspaceFolder}\\src\\compute_shader_program.cpp",
+                "${workspaceFolder}\\src\\particle_system.cpp",
                 "C:\\msys64\\mingw64\\include\\GLAD\\glad.c",
                 "C:\\msys64\\mingw64\\include\\GLFW\\glfw3.h",
                 "-o", "${fileDirname}\\${fileBasenameNoExtension}.exe",
