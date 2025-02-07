@@ -101,11 +101,10 @@ int main()
         glClearColor(0.85f, 0.85f, 0.85f, 1.0f);
         
         mat4 model = mat4(1.0f);
-        // model = translate(model, vec3())
         mat4 view = MainCam.GetViewMatrix();
         mat4 projection = mat4(1.0f);
         projection = perspective(radians(MainCam.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        particles.Render(projection * view * model);
+        particles.Render(Time.deltaTime, projection * view * model);
 
         // GLFW: POLL & CALL IOEVENTS + SWAP BUFFERS
         // -----------------------------------------

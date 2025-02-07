@@ -5,6 +5,8 @@
 #include <string>
 #include <sstream>
 
+#define INVALID_UNIFORM_LOC 0xffffffff;
+
 class ShaderProgram // ABSTRACT CLASS
 {
 public:
@@ -15,6 +17,8 @@ public:
     ~ShaderProgram();
     // Activate the shader program
     void use();
+    // Query uniform location
+    GLuint getUniformLocation(GLchar* name);
     // Utility uniform functions
     void setBool_w_Name(const std::string &name, bool value) const;  
     void setBool_w_Loc(GLint location, bool value) const;

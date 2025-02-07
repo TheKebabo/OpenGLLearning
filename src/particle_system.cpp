@@ -13,6 +13,13 @@ ParticleSystem::ParticleSystem(unsigned _numParticlesX = 100, unsigned _numParti
     mainShader = new VFShaderProgram("src//shaders//vertexShader.vs", "src//shaders//fragmentShader.fs");
     computeShader = new ComputeShaderProgram("src//shaders//computeShader.glsl");
 
+    // Get uniform ids
+    modelViewProjectionUniform = mainShader->getUniformLocation("ModelViewProjection");
+    colorUniform = mainShader->getUniformLocation("Color");
+    gravMassesUniform = computeShader->getUniformLocation("GravMasses");
+    gravPositionsUniform = computeShader->getUniformLocation("GravPositions");
+    dtUniform = computeShader->getUniformLocation("dt");
+
     initBuffers(new glm::vec3(0, 0.0f, -15.0f));
 }
 
@@ -24,23 +31,33 @@ ParticleSystem::~ParticleSystem()
     delete computeShader;
 }
 
-void ParticleSystem::Render(const glm::mat4& viewProjection)
+void ParticleSystem::Render(float dt, const glm::mat4& viewProjection)
 {
-    executeComputeShader();
+    executeComputeShader(dt);
     renderParticles(viewProjection);
 }
 
 // PRIVATES
-void ParticleSystem::initBuffers(glm::vec3* systemCentre)
+void ParticleSystem::initBuffers(glm::vec3* systemInitCentre)
 {
+    // Init data
+    // ---------
     std::vector<glm::vec4> positions(totalNumParticles);
-    initPositions(positions, *systemCentre);
+    initPositions(positions, *systemInitCentre);
+    std::vector<glm::vec4> velocities(totalNumParticles, glm::vec4(0.0f));
 
+    // Create buffers and bind to GL objects
+    // -------------------------------------
     glGenBuffers(1, &posBuffer);
+    glGenBuffers(1, &velBuffer);
 
+    // pos buffer
     GLuint bufferSize = (int)positions.size() * sizeof(positions[0]);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, posBuffer);   // Binds the buffer to an SSBO at binding index = 0 in the compute shader
     glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, positions.data(), GL_DYNAMIC_DRAW);  // Send buffer data to SSBO target
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, velBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, velocities.data(), GL_DYNAMIC_COPY); // 'copy' used for some reason?
 
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
@@ -79,9 +96,10 @@ void ParticleSystem::initPositions(std::vector<glm::vec4>& positions, glm::vec3&
     }
 }
 
-void ParticleSystem::executeComputeShader()
+void ParticleSystem::executeComputeShader(float dt)
 {
     computeShader->use();
+    computeShader->setFloat_w_Loc(dtUniform, dt);
     glDispatchCompute(totalNumParticles, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Wait for execution to complete so data isn't overwritten
 }

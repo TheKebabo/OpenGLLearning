@@ -13,6 +13,16 @@ void ShaderProgram::use()
     glUseProgram(ID);
 }
 
+GLuint ShaderProgram::getUniformLocation(GLchar* name)
+{
+    GLuint loc = glGetUniformLocation(ID, name);
+
+    if (loc == INVALID_UNIFORM_LOC)
+        std::cout << "Warning! Unable to get the location of uniform: " << name << std::endl;
+
+    return loc;
+}
+
 void ShaderProgram::setBool_w_Name(const std::string &name, bool value) const
 {         
     glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value); 
