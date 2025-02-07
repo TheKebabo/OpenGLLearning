@@ -16,8 +16,9 @@ layout (std430, binding = 1) buffer Vel {
 };
 
 // uniforms
-uniform float GravMasses[1];    // Masses of all the gravitational objects
-uniform vec3 GravPositions[1];  // Positions of all the objects
+// VARIABLE SIZE SO CHANGE TO SSBOS AT SOME POINT
+uniform float GravMasses[2];    // Masses of all the gravitational objects
+uniform vec3 GravPositions[2];  // Positions of all the objects
 uniform float dt;   // Small change in time
 
 

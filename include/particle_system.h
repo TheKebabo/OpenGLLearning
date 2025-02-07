@@ -23,7 +23,8 @@ private:
     GLuint velBuffer;
     GLuint VAO;
 
-    // shader uniforms so that the id of uniforms doesn't have to be fetched constantly
+    // Shader uniforms so that the id of uniforms doesn't have to be fetched constantly
+    // --------------------------------------------------------------------------------
     // vertex/fragment
     GLuint modelViewProjectionUniform = INVALID_UNIFORM_LOC;
     GLuint colorUniform = INVALID_UNIFORM_LOC;
@@ -35,10 +36,15 @@ private:
     VFShaderProgram* mainShader;
     ComputeShaderProgram* computeShader;
 
+    unsigned numGravObjects; 
+    std::vector<GLfloat> gravMasses;
+    std::vector<glm::vec3> gravPositions;
+
     // Init position buffer and VAO, and bind to SSBO and GL_VERTEX array for compute shader and vertex/fragment shader use
     void initBuffers(glm::vec3* systemCentre);
     // Particle positions calculated in cube centered at the origin
     void initPositions(std::vector<glm::vec4>& positions, glm::vec3& centre);
+    void initGravObjects();
     void executeComputeShader(float dt);
     void renderParticles(const glm::mat4& viewProjection); // No model matrix needed particle positions being determined by compute shader
 };

@@ -20,6 +20,8 @@ ParticleSystem::ParticleSystem(unsigned _numParticlesX = 100, unsigned _numParti
     gravPositionsUniform = computeShader->getUniformLocation("GravPositions");
     dtUniform = computeShader->getUniformLocation("dt");
 
+    numGravObjects = 2;
+
     initBuffers(new glm::vec3(0, 0.0f, -15.0f));
 }
 
@@ -96,9 +98,26 @@ void ParticleSystem::initPositions(std::vector<glm::vec4>& positions, glm::vec3&
     }
 }
 
+void ParticleSystem::initGravObjects()
+{
+    for (int i = 0; i < numGravObjects; ++i)
+    {
+        gravMasses.push_back(5.0f);
+        gravPositions.push_back(glm::vec3((float)i * 3.0f, 0.0f, -5.0f));
+    }
+}
+
 void ParticleSystem::executeComputeShader(float dt)
 {
     computeShader->use();
+    // Set all grav object uniforms
+    glUniform1fv(gravMassesUniform, numGravObjects, gravMasses.data());
+    for (int i = 0; i < numGravObjects; ++i)    // loop needed for array of vec3s
+    {
+        GLint gravPosLocI = glGetUniformLocation(computeShader->ID, "GravPositions[i]");
+        glUniform3f(gravPosLocI, gravPositions[i].x, gravPositions[i].y, gravPositions[i].z);
+    }
+    
     computeShader->setFloat_w_Loc(dtUniform, dt);
     glDispatchCompute(totalNumParticles, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // Wait for execution to complete so data isn't overwritten
