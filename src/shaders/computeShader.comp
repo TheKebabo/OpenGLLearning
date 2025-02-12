@@ -38,13 +38,14 @@ void main() {
     vec3 position = Position[idX].xyz;
 
     // calculate resultant attraction from all object masses (excl. other particles) 
-    vec3 resultantForce = vec3(0.0, 0.0, 0.0);
+    vec3 resultantForce = vec3(0.0);
     for (int i = 0; i < GravMasses.length(); i++) {
         resultantForce += calcForce(position, GravMasses[i], GravPositions[i]);
     }
 
     // approximate new pos and vel with constant acceleration formulas
     vec3 acceleration = resultantForce * INV_PARTICLE_MASS;
-    Position[idX] = vec4(position + Velocity[idX].xyz * dt + 0.5 * acceleration * dt * dt, 1.0);
+    // Position[idX] = vec4(position + Velocity[idX].xyz * dt + 0.5 * acceleration * dt * dt, 1.0);
+    Position[idX] = vec4(position + vec3(1.0), 1.0);
     Velocity[idX] = vec4(Velocity[idX].xyz + acceleration * dt, 0.0);
 }

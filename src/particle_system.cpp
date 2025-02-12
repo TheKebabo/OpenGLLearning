@@ -13,9 +13,9 @@ ParticleSystem::ParticleSystem(unsigned _numParticlesX = 100, unsigned _numParti
 
     // Init shader programs
     std::filesystem::path shadersDir = std::filesystem::current_path() / "src//shaders";
-    mainShader = new VFShaderProgram((shadersDir / "vertexShader.vs").string().c_str(),
-                                     (shadersDir / "fragmentShader.fs").string().c_str());
-    computeShader = new ComputeShaderProgram((shadersDir / "computeShader.glsl").string().c_str());
+    mainShader = new VFShaderProgram((shadersDir / "vertexShader.vert").string().c_str(),
+                                     (shadersDir / "fragmentShader.frag").string().c_str());
+    computeShader = new ComputeShaderProgram((shadersDir / "computeShader.comp").string().c_str());
 
     // Get uniform ids
     GLchar mvp[] = "ModelViewProjection";    // String literals can't be directly passed into functions
