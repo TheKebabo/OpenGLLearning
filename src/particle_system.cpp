@@ -1,3 +1,5 @@
+#include <iostream>
+#include <filesystem>
 #include <GLAD/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -10,19 +12,29 @@ ParticleSystem::ParticleSystem(unsigned _numParticlesX = 100, unsigned _numParti
     totalNumParticles = numParticlesX * numParticlesY * numParticlesZ;
 
     // Init shader programs
-    mainShader = new VFShaderProgram("src//shaders//vertexShader.vs", "src//shaders//fragmentShader.fs");
-    computeShader = new ComputeShaderProgram("src//shaders//computeShader.glsl");
+    std::filesystem::path shadersDir = std::filesystem::current_path() / "src//shaders";
+    mainShader = new VFShaderProgram((shadersDir / "vertexShader.vs").string().c_str(),
+                                     (shadersDir / "fragmentShader.fs").string().c_str());
+    computeShader = new ComputeShaderProgram((shadersDir / "computeShader.glsl").string().c_str());
 
     // Get uniform ids
-    modelViewProjectionUniform = mainShader->getUniformLocation("ModelViewProjection");
-    colorUniform = mainShader->getUniformLocation("Color");
-    gravMassesUniform = computeShader->getUniformLocation("GravMasses");
-    gravPositionsUniform = computeShader->getUniformLocation("GravPositions");
-    dtUniform = computeShader->getUniformLocation("dt");
+    GLchar mvp[] = "ModelViewProjection";    // String literals can't be directly passed into functions
+    GLchar color[] = "Color";
+    GLchar gravMasses[] = "GravMasses";
+    GLchar gravPos[] = "GravPositions";
+    GLchar dt[] = "dt";
+    mainShader->use();
+    modelViewProjectionUniform = mainShader->getUniformLocation(mvp);
+    colorUniform = mainShader->getUniformLocation(color);
+    computeShader->use();
+    gravMassesUniform = computeShader->getUniformLocation(gravMasses);
+    gravPositionsUniform = computeShader->getUniformLocation(gravPos);
+    dtUniform = computeShader->getUniformLocation(dt);
 
     numGravObjects = 2;
 
     initBuffers(new glm::vec3(0, 0.0f, -15.0f));
+    initGravObjects();
 }
 
 ParticleSystem::~ParticleSystem()
@@ -100,7 +112,7 @@ void ParticleSystem::initPositions(std::vector<glm::vec4>& positions, glm::vec3&
 
 void ParticleSystem::initGravObjects()
 {
-    for (int i = 0; i < numGravObjects; ++i)
+    for (unsigned i = 0; i < numGravObjects; ++i)
     {
         gravMasses.push_back(5.0f);
         gravPositions.push_back(glm::vec3((float)i * 3.0f, 0.0f, -5.0f));
@@ -112,9 +124,11 @@ void ParticleSystem::executeComputeShader(float dt)
     computeShader->use();
     // Set all grav object uniforms
     glUniform1fv(gravMassesUniform, numGravObjects, gravMasses.data());
-    for (int i = 0; i < numGravObjects; ++i)    // loop needed for array of vec3s
+    for (unsigned i = 0; i < numGravObjects; ++i)    // loop needed for array of vec3s
     {
-        GLint gravPosLocI = glGetUniformLocation(computeShader->ID, "GravPositions[i]");
+        GLchar uniformArrayElName[50];
+        sprintf(uniformArrayElName, "GravPositions[%o]", i);
+        GLint gravPosLocI = glGetUniformLocation(computeShader->ID, uniformArrayElName);
         glUniform3f(gravPosLocI, gravPositions[i].x, gravPositions[i].y, gravPositions[i].z);
     }
     

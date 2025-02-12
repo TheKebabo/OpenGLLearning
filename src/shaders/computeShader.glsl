@@ -22,6 +22,15 @@ uniform vec3 GravPositions[2];  // Positions of all the objects
 uniform float dt;   // Small change in time
 
 
+vec3 calcForce(vec3 particlePosition, float gravMass, vec3 gravPosition) {
+    vec3 displacement = gravPosition - particlePosition;
+    float dist = length(displacement);
+    float magnitude = GRAV_CONSTANT * gravMass * PARTICLE_MASS / (dist * dist);
+
+    return magnitude * displacement;
+}
+
+
 void main() {
     uint idX = gl_GlobalInvocationID.x;   // Current work group x position
 
@@ -30,7 +39,7 @@ void main() {
 
     // calculate resultant attraction from all object masses (excl. other particles) 
     vec3 resultantForce = vec3(0.0, 0.0, 0.0);
-    for (int i = 0; i < length(GravMasses); i++) {
+    for (int i = 0; i < GravMasses.length(); i++) {
         resultantForce += calcForce(position, GravMasses[i], GravPositions[i]);
     }
 
@@ -38,12 +47,4 @@ void main() {
     vec3 acceleration = resultantForce * INV_PARTICLE_MASS;
     Position[idX] = vec4(position + Velocity[idX].xyz * dt + 0.5 * acceleration * dt * dt, 1.0);
     Velocity[idX] = vec4(Velocity[idX].xyz + acceleration * dt, 0.0);
-}
-
-vec3 calcForce(vec3 particlePosition, float gravMass, float gravPosition) {
-    vec3 displacement = gravMassPosition - particlePosition;
-    float dist = length(displacement);
-    float magnitude = GRAV_CONSTANT * gravMass * PARTICLE_MASS / (dist * dist);
-
-    return magnitude * displacement;
 }
