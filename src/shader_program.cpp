@@ -15,7 +15,7 @@ void ShaderProgram::use()
 
 GLint ShaderProgram::getUniformLocation(GLchar* name)
 {
-    GLint loc = glGetUniformLocation(ID, name);
+    GLuint loc = (GLuint)glGetUniformLocation(ID, name);
 
     if (loc == 0xffffffff) {
         std::cout << "Warning! Unable to get the location of uniform: " << name << std::endl;
